@@ -1,0 +1,138 @@
+/* Peek — popup/popup.js
+ * Reads and writes the same storage keys the content script watches, so every
+ * change applies immediately in every open tab, with no reload.
+ */
+(function () {
+  "use strict";
+
+  const api = typeof browser !== "undefined" ? browser : chrome;
+
+  /* Kept in step with DEFAULTS in config/rules.js. */
+  const DEFAULTS = {
+    enabled: true, autoPeek: true, images: true, skipNav: true,
+    theme: "auto", dwell: 320, watchlist: [], userDisabled: []
+  };
+  const TOGGLES = ["enabled", "autoPeek", "skipNav", "images"];
+
+  const $ = (id) => document.getElementById(id);
+  const save = (patch) => api.storage.local.set(patch);
+  const normalise = (h) => String(h || "").toLowerCase().replace(/^www\./, "");
+
+  let state = Object.assign({}, DEFAULTS);
+  let currentHost = "";
+
+  /* --- current tab ---------------------------------------------------- */
+
+  function activeHost() {
+    try {
+      const q = api.tabs.query({ active: true, currentWindow: true });
+      if (!q || !q.then) return Promise.resolve("");
+      return q.then((tabs) => {
+        const url = tabs && tabs[0] && tabs[0].url;
+        if (!url) return "";
+        try { return normalise(new URL(url).hostname); } catch (_) { return ""; }
+      }).catch(() => "");
+    } catch (_) { return Promise.resolve(""); }
+  }
+
+  const blocked = (host) =>
+    state.userDisabled.some((e) => {
+      const n = normalise(e);
+      return n && (host === n || host.endsWith("." + n));
+    });
+
+  function paintSite() {
+    const section = $("siteSection");
+    if (!currentHost || /^(moz-extension|chrome|about|chrome-extension)$/.test(currentHost)) {
+      section.style.display = "none";
+      return;
+    }
+    $("siteHost").textContent = currentHost;
+    $("siteOff").checked = blocked(currentHost);
+    paintBlockedList();
+  }
+
+  function paintBlockedList() {
+    const box = $("blockedList");
+    box.textContent = "";
+    if (!state.userDisabled.length) return;
+
+    box.appendChild(document.createTextNode("Switched off on: "));
+    state.userDisabled.forEach((host, i) => {
+      if (i) box.appendChild(document.createTextNode(", "));
+      const a = document.createElement("a");
+      a.textContent = host;
+      a.title = "Turn Peek back on for " + host;
+      a.addEventListener("click", () => {
+        state.userDisabled = state.userDisabled.filter((h) => h !== host);
+        save({ userDisabled: state.userDisabled });
+        paintSite();
+      });
+      box.appendChild(a);
+    });
+  }
+
+  /* --- theme ----------------------------------------------------------- */
+
+  function paintTheme() {
+    for (const btn of $("theme").querySelectorAll("button")) {
+      btn.setAttribute("aria-pressed", String(btn.dataset.theme === state.theme));
+    }
+  }
+
+  /* --- wiring ---------------------------------------------------------- */
+
+  Promise.all([api.storage.local.get(Object.keys(DEFAULTS)), activeHost()])
+    .then(([stored, host]) => {
+      state = Object.assign({}, DEFAULTS, stored || {});
+      currentHost = host;
+
+      for (const k of TOGGLES) {
+        $(k).checked = !!state[k];
+        $(k).addEventListener("change", (e) => {
+          state[k] = e.target.checked;
+          save({ [k]: state[k] });
+        });
+      }
+
+      $("siteOff").addEventListener("change", (e) => {
+        if (!currentHost) return;
+        state.userDisabled = e.target.checked
+          ? state.userDisabled.concat([currentHost])
+          : state.userDisabled.filter((h) => {
+              const n = normalise(h);
+              return !(currentHost === n || currentHost.endsWith("." + n));
+            });
+        save({ userDisabled: state.userDisabled });
+        paintBlockedList();
+      });
+
+      for (const btn of $("theme").querySelectorAll("button")) {
+        btn.addEventListener("click", () => {
+          state.theme = btn.dataset.theme;
+          save({ theme: state.theme });
+          paintTheme();
+        });
+      }
+
+      $("dwell").value = state.dwell;
+      $("dwellVal").textContent = state.dwell + " ms";
+      $("dwell").addEventListener("input", (e) => { $("dwellVal").textContent = e.target.value + " ms"; });
+      $("dwell").addEventListener("change", (e) => save({ dwell: parseInt(e.target.value, 10) }));
+
+      $("watchlist").value = (state.watchlist || []).join("\n");
+      let t = null;
+      $("watchlist").addEventListener("input", (e) => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          save({ watchlist: e.target.value.split("\n").map((x) => x.trim()).filter(Boolean) });
+        }, 400);
+      });
+
+      paintSite();
+      paintTheme();
+    })
+    .catch((err) => console.error("[peek] popup could not start", err));
+
+  try { $("ver").textContent = "v" + api.runtime.getManifest().version; } catch (_) { /* ignore */ }
+})();

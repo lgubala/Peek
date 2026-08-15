@@ -1,0 +1,76 @@
+{
+  "manifest_version": 2,
+  "name": "Peek",
+  "version": "1.4.0",
+  "description": "Read a link before you open it. Peek shows what is actually on the other side, without opening the page.",
+  "homepage_url": "https://github.com/lgubala/Peek",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "peek@lgubala.dev",
+      "strict_min_version": "115.0"
+    }
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": [
+      "src/common/log.js",
+      "src/config/rules.js",
+      "src/config/sites.js",
+      "src/platform/dom.js",
+      "src/common/text.js",
+      "src/common/url.js",
+      "src/common/policy.js",
+      "vendor/readability.js",
+      "src/extract/jsonld.js",
+      "src/extract/types.js",
+      "src/extract/index.js",
+      "src/reader/images.js",
+      "src/reader/sanitize.js",
+      "src/reader/tidy.js",
+      "src/reader/index.js",
+      "src/sites/index.js",
+      "src/sites/github.js",
+      "src/background/gate.js",
+      "src/background/cache.js",
+      "src/background/fetcher.js",
+      "src/background/pipeline.js",
+      "src/background/index.js"
+    ],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/common/log.js",
+        "src/config/rules.js",
+        "src/config/sites.js",
+        "src/platform/dom.js",
+        "src/common/text.js",
+        "src/common/url.js",
+        "src/common/policy.js",
+        "src/link/tld.js",
+        "src/link/recognizers.js",
+        "src/link/nav.js",
+        "src/link/analyze.js",
+        "src/content/styles.js",
+        "src/content/settings.js",
+        "src/content/card.js",
+        "src/content/hover.js",
+        "src/content/index.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": false
+    }
+  ],
+  "browser_action": {
+    "default_title": "Peek",
+    "default_popup": "src/popup/popup.html"
+  }
+}
