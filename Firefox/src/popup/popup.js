@@ -78,6 +78,11 @@
     for (const btn of $("theme").querySelectorAll("button")) {
       btn.setAttribute("aria-pressed", String(btn.dataset.theme === state.theme));
     }
+    /* The popup follows the same choice as the card. "auto" leaves the
+     * attribute off so prefers-color-scheme decides. */
+    const root = document.documentElement;
+    if (state.theme === "dark" || state.theme === "light") root.setAttribute("data-theme", state.theme);
+    else root.removeAttribute("data-theme");
   }
 
   /* --- wiring ---------------------------------------------------------- */

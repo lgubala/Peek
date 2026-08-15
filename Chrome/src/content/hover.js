@@ -40,10 +40,18 @@
     card.className = "card";
     /* Critical layout inline, so a blocked stylesheet degrades to ugly
      * rather than invisible. */
+    /* Critical layout inline, so a stylesheet blocked by a strict page CSP
+     * degrades to ugly rather than invisible. Colours go through var() with a
+     * literal fallback: when the sheet loaded the theme wins, and when it did
+     * not the hex keeps the card readable. Plain hex here would beat the
+     * stylesheet and light mode could never take effect. */
     card.style.cssText =
-      "display:none;position:fixed;z-index:2147483647;max-width:" + P.config.CARD_MAX_WIDTH + "px;" +
-      "background:#131A21;color:#DCE5EC;border:1px solid #2A3742;border-radius:10px;" +
-      "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:13px;";
+      "display:none;position:fixed;z-index:2147483647;" +
+      "max-width:" + P.config.CARD_MAX_WIDTH + "px;" +
+      "background:var(--bg,#131A21);color:var(--ink,#DCE5EC);" +
+      "border:1px solid var(--border,#2A3742);border-radius:10px;" +
+      "font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;" +
+      "font-size:13px;";
     card.addEventListener("mouseenter", () => clearTimeout(hideTimer));
     card.addEventListener("mouseleave", scheduleHide);
     root.appendChild(card);

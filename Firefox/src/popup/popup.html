@@ -13,13 +13,16 @@
   <span class="ver" id="ver"></span>
 </header>
 
-<section id="siteSection" hidden>
+<section id="siteSection">
   <div class="lbl">This site</div>
-  <div class="site">
-    <span class="host" id="siteHost"></span>
-    <button class="sitebtn" id="siteToggle"></button>
-  </div>
-  <div class="sub" id="siteHint"></div>
+  <label class="row">
+    <input type="checkbox" id="siteOff"><span class="sw"></span>
+    <span class="txt">
+      <span class="name">Don’t use Peek on <span id="siteHost">this site</span></span>
+      <span class="hint">Switches Peek off here and on every subdomain. Applies immediately, no reload.</span>
+    </span>
+  </label>
+  <div class="sub" id="blockedList"></div>
 </section>
 
 <section>
@@ -63,28 +66,6 @@
     <button data-theme="light">Light</button>
     <button data-theme="dark">Dark</button>
   </div>
-</section>
-
-<section id="siteSection">
-  <div class="lbl">This site</div>
-  <label class="row">
-    <input type="checkbox" id="siteOff"><span class="sw"></span>
-    <span class="txt">
-      <span class="name">Don’t use Peek on <span id="siteHost">this site</span></span>
-      <span class="hint" id="siteHint">Switches Peek off here and on every subdomain. Applies immediately, no reload.</span>
-    </span>
-  </label>
-  <div class="sub" id="blockedList"></div>
-</section>
-
-<section>
-  <div class="lbl">Appearance</div>
-  <div class="seg" id="theme">
-    <button type="button" data-theme="auto">Auto</button>
-    <button type="button" data-theme="light">Light</button>
-    <button type="button" data-theme="dark">Dark</button>
-  </div>
-  <div class="sub">Auto follows your browser’s light or dark setting.</div>
 </section>
 
 <section>

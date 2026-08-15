@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.1
+
+- **Light mode works.** The card sets a few critical styles inline so a
+  stylesheet blocked by a strict page CSP degrades to ugly rather than
+  invisible — but those included literal colours, and inline styles beat the
+  stylesheet, so the theme could never take effect. Child elements switched to
+  light tokens on a hard-coded dark background, which is why the text became
+  unreadable. The inline colours now go through `var(--bg, #131A21)`: the theme
+  wins when the sheet loaded, the literal keeps the card readable when it did not
+- **One Appearance section, one This-site section.** Both were duplicated in
+  the popup markup; `getElementById` returns the first match, so the lower
+  copies were dead controls
+- The popup now follows the theme too, instead of staying dark while the card
+  went light
+
 ## 1.5.0
 
 - **Icons.** A peephole set in a door, at 16, 32, 48, 96 and 128px. Each size
