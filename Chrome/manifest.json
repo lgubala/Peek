@@ -1,10 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Peek",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Read a link before you open it. Peek shows what is actually on the other side, without opening the page.",
   "homepage_url": "https://github.com/lgubala/Peek",
   "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "permissions": [
     "storage",
     "tabs",
@@ -45,6 +51,11 @@
   ],
   "action": {
     "default_title": "Peek",
-    "default_popup": "src/popup/popup.html"
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png"
+    }
   }
 }

@@ -9,6 +9,10 @@ README — so you can decide whether to open it.
 The web is a corridor of doors with nothing written on them. Peek puts a window
 in each one.
 
+<p align="center">
+  <img src="docs/icon/preview.png" alt="The Peek icon at 16, 32, 48, 96 and 128px, on a light and a dark toolbar" width="430">
+</p>
+
 <!-- docs/screenshots/ -->
 
 ---
@@ -267,6 +271,25 @@ injects: no card, no errors, no logs.
   deployment should bundle a proper category list
 - Visited/unvisited link state is deliberately unavailable to extensions, so
   Peek cannot show it
+
+## The icon
+
+A peephole set in a door — the metaphor the extension is built on.
+
+Each size is **drawn, not scaled**. `docs/icon/make-icons.py` redraws the mark
+per size, because a 128px icon shrunk to 16px turns to mush: the hinge seam
+only appears at 48px and up, the catch of light on the lens and the door knob
+only at 128. `docs/icon/peek.svg` is the 128px form for anywhere scalable is
+wanted.
+
+Two directions were tried and rejected, recorded so nobody re-treads them: a
+teal tile with a dark circle reads as a camera lens, the wrong association for
+a tool whose selling point is that it does not watch you; and a door standing
+ajar with light spilling out collapses into a media play button at 16px.
+
+```sh
+python3 docs/icon/make-icons.py Firefox/icons     # needs Pillow
+```
 
 ## Licence
 

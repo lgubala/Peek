@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0
+
+- **Icons.** A peephole set in a door, at 16, 32, 48, 96 and 128px. Each size
+  is drawn rather than scaled: the hinge seam appears at 48, the glint and the
+  knob only at 128, because at 16px they turn to mush. Source and generator in
+  `docs/icon/`
+
 ## 1.4.0
 
 - **Navigation links are ignored** by default. Menus, breadcrumbs, tab strips

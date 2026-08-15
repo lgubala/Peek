@@ -9,8 +9,9 @@ body {
 
 header {
   padding: 12px 14px 10px; border-bottom: 1px solid #202B35;
-  display: flex; align-items: baseline; gap: 8px;
+  display: flex; align-items: center; gap: 8px;
 }
+header .mark { display: block; border-radius: 5px; flex: none; }
 h1 { font-size: 15px; font-weight: 600; margin: 0; color: #7FD8C4; letter-spacing: -.01em; }
 .ver { font-size: 10px; margin-left: auto; color: #4E5E6C; }
 
