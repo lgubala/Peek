@@ -59,15 +59,11 @@
         description: meta.description || "",
         image: "",                 // the generated social card says nothing
         metrics, flags: [], ingredients: null, steps: null,
-        watchHits: [], source: ["GitHub API"], lang: "", canonical: meta.html_url || ""
+        source: ["GitHub API"], lang: "", canonical: meta.html_url || ""
       };
       if (meta.archived) summary.flags.push({ tone: "warn", text: "This repository is archived." });
       if (meta.fork) summary.flags.push({ tone: "info", text: "This is a fork." });
 
-      P.extract.applyWatchlist(
-        Object.assign(summary, { ingredients: null, steps: null }),
-        (opts.watchlist || []).map((w) => String(w).toLowerCase())
-      );
 
       /* GitHub does not absolutize relative paths inside raw HTML <img> tags,
        * and READMEs are full of them. Images resolve under /raw/, links under

@@ -208,7 +208,6 @@
   font-size: 10.5px; padding: 2px 6px; border-radius: 4px;
   background: var(--bg-chip); color: var(--ink-soft); border: 1px solid var(--border-chip);
 }
-.ingr span.hit { background: var(--bad-bg); color: var(--bad); border-color: var(--bad-br); font-weight: 600; }
 
 ol.steps { margin: 0; padding: 0 0 0 17px; font-size: 12px; line-height: 1.5; color: var(--ink-soft); }
 ol.steps li { margin-bottom: 5px; }

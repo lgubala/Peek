@@ -44,8 +44,9 @@ Nothing is sent to the author or to anyone else.
 ## What is stored
 
 Your settings, in `storage.local`: whether Peek is enabled, whether hovering
-fetches, whether images load, the hover delay, and your watchlist. They stay on
-your machine and are never transmitted.
+fetches, whether images load, whether navigation links are ignored, the
+light/dark preference, the hover delay, and the list of sites you have switched
+Peek off for. They stay on your machine and are never transmitted.
 
 ## Turning the requests off
 

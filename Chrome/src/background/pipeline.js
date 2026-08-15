@@ -73,7 +73,7 @@
       const { text, bytes, truncated } = await P.fetcher.readCapped(res);
       result.bytes = bytes;
       result.truncated = truncated;
-      result.summary = P.extract.extract(text, { watchlist: opts.watchlist || [] });
+      result.summary = P.extract.extract(text);
       result.article = P.reader.read(text, result.finalUrl, { images: !!opts.images });
 
       P.cache.set(gate.url, opts, result);

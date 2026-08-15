@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.8.0
+
+- **Removed the watchlist.** Highlighting user-supplied words inside a peeked
+  page was a feature in search of a problem: it only ever did anything on
+  recipes, it needed configuring before it did anything at all, and it pulled
+  the card away from the one job it is good at — showing what is on the other
+  side of a link. Every trace is gone: the setting, the popup field, the
+  message payload, the highlight styling and the `watchHits` field on the
+  summary object. Entries below that mention it are kept as history
+
+## 1.7.3
+
+- **Fixed: `Extension context invalidated` on every hover** after the extension
+  was reloaded, updated or switched off while a page was already open. Content
+  scripts keep running in those tabs but lose their bridge to the background:
+  `runtime.id` goes undefined and `sendMessage` throws *synchronously*, so the
+  `.catch()` on the returned promise never saw it and the error surfaced as
+  uncaught. The call is now inside a `try`, the bridge is checked first, and
+  the promise path recognises the same condition
+- When it happens, the card explains it once — "Peek was reloaded or updated.
+  Reload this page to use it here" — and then Peek goes quiet in that tab
+  rather than repeating itself on every link
+
 ## 1.7.2
 
 - **Fixed: every link failed in Chrome** with `Cannot read properties of

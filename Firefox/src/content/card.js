@@ -132,11 +132,8 @@
     const wrap = el("div", "body scroll");
     hero(wrap, summary, settings);
 
-    const hits = new Set((summary.watchHits || []).map((h) => (h.context || "").toLowerCase()));
     const ing = el("div", "ingr");
-    summary.ingredients.forEach((i) => {
-      ing.appendChild(el("span", hits.has(i.toLowerCase()) ? "hit" : null, i));
-    });
+    summary.ingredients.forEach((i) => ing.appendChild(el("span", null, i)));
     wrap.appendChild(ing);
 
     if (summary.steps && summary.steps.length) {

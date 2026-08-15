@@ -37,7 +37,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       const result = await chrome.runtime.sendMessage({
         type: "peek:offscreen:look",
         url: msg.url,
-        watchlist: msg.watchlist || [],
         images: !!msg.images
       });
       sendResponse(result || { ok: false, reason: "No answer from the offscreen document." });

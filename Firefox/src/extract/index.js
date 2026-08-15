@@ -12,11 +12,10 @@
 
   function extract(html, opts) {
     opts = opts || {};
-    const watch = (opts.watchlist || []).map((w) => String(w).toLowerCase().trim()).filter(Boolean);
 
     const r = {
       kind: "", heading: "", description: "", metrics: [], flags: [],
-      ingredients: null, steps: null, image: "", watchHits: [],
+      ingredients: null, steps: null, image: "",
       lang: "", canonical: "", source: []
     };
 
@@ -85,32 +84,9 @@
     const canon = doc.querySelector('link[rel="canonical"]');
     r.canonical = canon ? canon.getAttribute("href") || "" : "";
 
-    /* --- watchlist ------------------------------------------------------ */
-    applyWatchlist(r, watch);
-
     r.metrics = r.metrics.filter((m, i) => m && r.metrics.indexOf(m) === i).slice(0, 6);
     return r;
   }
 
-  /* Terms the user never wants to eat, buy or read. */
-  function applyWatchlist(r, watch) {
-    if (!watch || !watch.length) return r;
-    const hay = [
-      r.heading, r.description,
-      (r.ingredients || []).join(" | "),
-      (r.steps || []).join(" ")
-    ].join(" \n ").toLowerCase();
-
-    for (const term of watch) {
-      if (hay.indexOf(term) === -1) continue;
-      const where = (r.ingredients || []).find((i) => i.toLowerCase().indexOf(term) !== -1);
-      r.watchHits.push({ term, context: where || "" });
-    }
-    if (r.watchHits.length) {
-      r.flags.push({ tone: "bad", text: "Watchlist: " + r.watchHits.map((h) => h.term).join(", ") });
-    }
-    return r;
-  }
-
-  P.extract = { extract, applyWatchlist };
+  P.extract = { extract };
 })(self.Peek = self.Peek || {});

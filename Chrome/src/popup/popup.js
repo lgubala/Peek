@@ -10,7 +10,7 @@
   /* Kept in step with DEFAULTS in config/rules.js. */
   const DEFAULTS = {
     enabled: true, autoPeek: true, images: true, skipNav: true,
-    theme: "auto", dwell: 320, watchlist: [], userDisabled: []
+    theme: "auto", dwell: 320, userDisabled: []
   };
   const TOGGLES = ["enabled", "autoPeek", "skipNav", "images"];
 
@@ -128,15 +128,6 @@
       $("dwellVal").textContent = state.dwell + " ms";
       $("dwell").addEventListener("input", (e) => { $("dwellVal").textContent = e.target.value + " ms"; });
       $("dwell").addEventListener("change", (e) => save({ dwell: parseInt(e.target.value, 10) }));
-
-      $("watchlist").value = (state.watchlist || []).join("\n");
-      let t = null;
-      $("watchlist").addEventListener("input", (e) => {
-        clearTimeout(t);
-        t = setTimeout(() => {
-          save({ watchlist: e.target.value.split("\n").map((x) => x.trim()).filter(Boolean) });
-        }, 400);
-      });
 
       paintSite();
       paintTheme();

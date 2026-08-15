@@ -45,7 +45,7 @@ A handler is an object with `name`, `match(url)` and `run(url, opts, ctx)`.
           image: "",
           metrics: ["one", "two"],
           flags: [], ingredients: null, steps: null,
-          watchHits: [], source: ["example API"]
+          source: ["example API"]
         },
         article: ctx.clean(res.text, { images: opts.images, maxImages: 1 })
       };

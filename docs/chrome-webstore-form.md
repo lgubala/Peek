@@ -25,9 +25,9 @@ field disappears from the form.
 ## storage justification
 
 > Stores the user's own settings locally: whether Peek is enabled, whether
-> hovering fetches pages, whether images are shown, the light/dark preference,
-> the hover delay, the list of sites the user has switched Peek off for, and
-> the user's watchlist of words to highlight.
+> hovering fetches pages, whether images are shown, whether navigation links
+> are ignored, the light/dark preference, the hover delay, and the list of
+> sites the user has switched Peek off for.
 >
 > This is a handful of preferences the user sets in the toolbar popup. Nothing
 > is transmitted anywhere; the extension has no server to transmit it to.

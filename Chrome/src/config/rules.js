@@ -238,7 +238,6 @@
       skipNav: true,      // ignore menus, breadcrumbs and footers
       theme: "auto",      // "auto" | "dark" | "light"
       dwell: 320,
-      watchlist: [],
       userDisabled: []    // hosts switched off from the toolbar popup
     }
   };

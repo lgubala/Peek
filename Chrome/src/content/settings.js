@@ -11,7 +11,10 @@
 
   function set(key, value) {
     values[key] = value;
-    if (api) { try { api.storage.local.set({ [key]: value }); } catch (_) { /* ignore */ } }
+    /* Throws once the extension has been reloaded underneath this page. The
+     * in-memory value still updates, so the tab keeps behaving sensibly until
+     * it is reloaded. */
+    if (api) { try { api.storage.local.set({ [key]: value }); } catch (_) { /* orphaned */ } }
     return values;
   }
 
@@ -26,7 +29,6 @@
             if (stored[k] !== undefined) values[k] = stored[k];
           }
         }
-        if (values.watchlist.length) P.log.info("watchlist:", values.watchlist.join(", "));
         return values;
       }).catch(() => values);
     } catch (_) { return Promise.resolve(values); }

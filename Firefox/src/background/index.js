@@ -13,7 +13,6 @@
     if (!msg || msg.type !== "peek:look") return false;
 
     P.pipeline.look(msg.url, {
-      watchlist: msg.watchlist || [],
       images: !!msg.images
     })
       .then(sendResponse)

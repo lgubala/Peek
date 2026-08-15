@@ -74,8 +74,7 @@ sha256sum package/Readability.js
 `["none"]`.
 
 Peek transmits nothing to the developer or to any third party. It has no
-servers, no analytics and no accounts. Settings and the watchlist live in
-`storage.local` and never leave the machine.
+servers, no analytics and no accounts. Settings live in `storage.local` and never leave the machine.
 
 Peek **does** make requests to the sites the user hovers over, in order to read
 the page and show what is on it. That is the extension's whole function and it
@@ -93,7 +92,7 @@ no network requests at all.
 | Permission | Why |
 |---|---|
 | `<all_urls>` | The card appears wherever the user hovers a link, and the background fetches the destination to fill it. There is no server; everything happens in the browser. |
-| `storage` | Settings and the watchlist, locally. |
+| `storage` | Settings, locally. |
 | *(no `tabs`)* | The popup reads the active tab's hostname for the per-site off switch. That works from the host permission alone, so `tabs` is deliberately not requested. |
 | `offscreen` (Chrome only) | MV3 service workers have no DOM and Peek cannot parse HTML without one. |
 

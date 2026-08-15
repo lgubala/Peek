@@ -7,6 +7,11 @@
   const api = (typeof browser !== "undefined" && browser.runtime) ? browser
             : (typeof chrome !== "undefined" && chrome.runtime) ? chrome : null;
 
+  /* Set once the extension has been reloaded, updated or disabled underneath
+   * this page. Everything the content script owns still works — it is only the
+   * bridge to the background that is gone. */
+  let orphaned = false, orphanNotified = false;
+
   let dwellTimer = null, hideTimer = null;
   let currentAnchor = null, pendingAnchor = null;
   let currentData = null, state = null;
@@ -106,23 +111,68 @@
 
   /* --- lookup ----------------------------------------------------------- */
 
+  /* When an extension is reloaded, updated or switched off, the content
+   * scripts already running in open tabs keep running but lose their bridge to
+   * the background. runtime.id goes undefined and sendMessage throws
+   * *synchronously*, so a .catch() on the returned promise never sees it. */
+  function bridgeAlive() {
+    try { return !!(api && api.runtime && api.runtime.id); }
+    catch (_) { return false; }
+  }
+
+  const isInvalidated = (err) =>
+    /context invalidated|receiving end does not exist|message port closed/i
+      .test(String((err && err.message) || err));
+
+  /* Explain it once, on the card the user is looking at, then go quiet. A
+   * card on every hover saying "reload" would be worse than the silence. */
+  function announceOrphan() {
+    const first = !orphanNotified;
+    orphanNotified = true;
+
+    if (first) {
+      P.log.warn("the extension was reloaded or updated \u2014 reload this page to use Peek here");
+      if (currentData) {
+        state = { ok: false, reason:
+          "Peek was reloaded or updated. Reload this page to use it here." };
+        draw();                       // before `orphaned`, so this one still renders
+      }
+    } else {
+      hide();
+    }
+
+    orphaned = true;
+  }
+
   function lookup() {
-    if (!api || !api.runtime || state) return;
+    if (state || orphaned) return;
+    if (!bridgeAlive()) { announceOrphan(); return; }
+
     state = "loading";
     const anchor = currentAnchor, data = currentData;
     draw();
     P.log.info("peeking", data.lookUrl);
 
-    api.runtime.sendMessage({
-      type: "peek:look",
-      url: data.lookUrl,
-      watchlist: P.settings.values.watchlist,
-      images: P.settings.values.images
-    }).then((res) => {
+    let pending;
+    try {
+      pending = api.runtime.sendMessage({
+        type: "peek:look",
+        url: data.lookUrl,
+        images: P.settings.values.images
+      });
+    } catch (err) {
+      if (isInvalidated(err)) { announceOrphan(); return; }
+      state = { ok: false, reason: String((err && err.message) || err) };
+      draw();
+      return;
+    }
+
+    Promise.resolve(pending).then((res) => {
       if (currentAnchor !== anchor) return;   // the pointer moved on
       state = res || { ok: false, reason: "No answer from the background script." };
       draw();
     }).catch((err) => {
+      if (isInvalidated(err)) { announceOrphan(); return; }
       if (currentAnchor !== anchor) return;
       state = { ok: false, reason: String((err && err.message) || err) };
       draw();
@@ -138,7 +188,7 @@
   }
 
   function show(anchor, opts) {
-    if (silencedHere()) return;
+    if (orphaned || silencedHere()) return;
     /* Also checked in eligible(), but guarded here so nothing can route
      * around it. `force` is how __peek.probe() looks at a nav link anyway. */
     if (P.settings.values.skipNav && !(opts && opts.force) && P.nav.isNavLink(anchor)) return;
@@ -192,7 +242,7 @@
 
   function attach() {
     document.addEventListener("mouseover", (e) => {
-      if (!P.settings.values.enabled || silencedHere()) return;
+      if (orphaned || !P.settings.values.enabled || silencedHere()) return;
       const a = e.target.closest && e.target.closest("a[href]");
       if (!eligible(a)) return;
       if (a === currentAnchor || a === pendingAnchor) { clearTimeout(hideTimer); return; }
@@ -213,7 +263,7 @@
     }, true);
 
     document.addEventListener("focusin", (e) => {
-      if (!P.settings.values.enabled || silencedHere()) return;
+      if (orphaned || !P.settings.values.enabled || silencedHere()) return;
       const a = e.target.closest && e.target.closest("a[href]");
       if (eligible(a)) show(a);
     }, true);
@@ -242,6 +292,7 @@
 
   P.hover = {
     attach, show, hide, lookup, applyTheme, silencedHere,
+    get orphaned() { return orphaned; },
     get data() { return currentData; },
     get state() { return state; }
   };

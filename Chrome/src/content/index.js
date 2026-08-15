@@ -27,7 +27,6 @@
     self.__peek = {
       get settings() { return Object.assign({}, P.settings.values); },
       set: (k, v) => P.settings.set(k, v),
-      setWatchlist: (list) => P.settings.set("watchlist", (list || []).map(String)),
       /* Why was this link skipped? __peek.why("nav a") on any page. */
       why(sel) {
         const a = document.querySelector(sel || "a[href]");
