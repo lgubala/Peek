@@ -23,6 +23,10 @@
 
   /* --- current tab ---------------------------------------------------- */
 
+  /* tab.url needs either the "tabs" permission or a host permission matching
+   * the tab. Peek has <all_urls>, so "tabs" is not requested — one fewer
+   * permission at install. If the URL is withheld anyway, the per-site section
+   * simply hides itself. */
   function activeHost() {
     try {
       const q = api.tabs.query({ active: true, currentWindow: true });

@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.7.1
+
+- **Dropped the `tabs` permission.** The popup reads the active tab's hostname
+  for the per-site switch, and a matching host permission has granted that
+  since Chrome 50 and Firefox 86. Peek already has `<all_urls>`, so `tabs` was
+  redundant — one fewer permission at install and one fewer justification at
+  review
+- Added `docs/chrome-webstore-form.md` with the Web Store privacy answers
+
 ## 1.7.0
 
 - **Email addresses are inspected too.** An address is a link, and it is where

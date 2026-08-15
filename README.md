@@ -306,4 +306,5 @@ python3 docs/icon/make-icons.py Firefox/icons     # needs Pillow
 
 MIT — see [LICENSE](LICENSE). Bundled third-party code in
 [THIRD-PARTY.md](THIRD-PARTY.md), store-review notes in
-[REVIEWER-NOTES.md](REVIEWER-NOTES.md).
+[REVIEWER-NOTES.md](REVIEWER-NOTES.md), and Web Store form answers in
+[docs/chrome-webstore-form.md](docs/chrome-webstore-form.md).
