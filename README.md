@@ -10,7 +10,7 @@ The web is a corridor of doors with nothing written on them. Peek puts a window
 in each one.
 
 <p align="center">
-  <img src="docs/icon/preview.png" alt="The Peek icon at 16, 32, 48, 96 and 128px, on a light and a dark toolbar" width="430">
+  <img src="docs/screenshots/b.png" alt="The Peek at the apple pie" width="430">
 </p>
 
 <!-- docs/screenshots/ -->
