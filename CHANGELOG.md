@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.7.2
+
+- **Fixed: every link failed in Chrome** with `Cannot read properties of
+  undefined (reading 'forHost')`. Chrome's offscreen document lists the engine
+  modules in HTML rather than in the manifest, and `src/common/policy.js` was
+  never added to that list, so the safety gate threw on every lookup. Firefox
+  was unaffected, because its background page takes the list from the manifest
+- That list is now generated from the Firefox manifest by
+  `docs/sync-offscreen.py`, which also has a `--check` mode for CI. This class
+  of bug fails only in Chrome and only at runtime, so it needed a guard rather
+  than more care
+
 ## 1.7.1
 
 - **Dropped the `tabs` permission.** The popup reads the active tab's hostname
