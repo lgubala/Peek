@@ -44,19 +44,6 @@ The exception is trouble. If a link has an `@` before the domain, a punycode
 lookalike, or link text claiming one site while pointing at another, the
 warnings and the dissected URL jump to the top of the card.
 
-## The watchlist
-
-Terms you never want to eat, buy or read. Set them in the toolbar popup, one
-per line:
-
-```
-almond
-gluten
-palm oil
-```
-
-Any hit is highlighted red wherever it appears. Run down a page of recipe
-results and the ones containing almonds mark themselves.
 
 ## Install
 
