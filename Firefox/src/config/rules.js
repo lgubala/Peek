@@ -114,6 +114,37 @@
       "usps", "dpd", "irs", "hmrc"
     ],
 
+    /* Mail providers anyone can sign up to in a minute. Fine for a person,
+     * telling when the address claims to speak for an organisation. */
+    FREE_MAIL: new Set([
+      "gmail.com", "googlemail.com", "hotmail.com", "hotmail.co.uk", "outlook.com",
+      "live.com", "msn.com", "yahoo.com", "yahoo.co.uk", "ymail.com", "aol.com",
+      "gmx.com", "gmx.net", "gmx.de", "mail.com", "inbox.com", "zoho.com",
+      "yandex.ru", "yandex.com", "mail.ru", "rambler.ru", "qq.com", "163.com",
+      "126.com", "sina.com", "naver.com", "daum.net", "seznam.cz", "azet.sk",
+      "centrum.sk", "post.sk", "zoznam.sk", "protonmail.com", "proton.me",
+      "tutanota.com", "tuta.io", "icloud.com", "me.com", "mac.com"
+    ]),
+
+    /* Addresses that exist to be thrown away. */
+    DISPOSABLE_MAIL: new Set([
+      "mailinator.com", "guerrillamail.com", "10minutemail.com", "temp-mail.org",
+      "throwawaymail.com", "yopmail.com", "trashmail.com", "sharklasers.com",
+      "getnada.com", "dispostable.com", "maildrop.cc", "fakeinbox.com"
+    ]),
+
+    /* Words that make a local part read as an office rather than a person.
+     * A charity's operations manager does not write from a free mailbox. */
+    ROLE_WORDS: new RegExp("(" + [
+      "aid", "relief", "donation", "donor", "charity", "foundation", "fund",
+      "grant", "award", "prize", "winner", "claim", "payment", "payout",
+      "refund", "compensation", "settlement", "inherit", "lottery",
+      "support", "helpdesk", "service", "customer", "client", "billing",
+      "security", "verify", "verification", "account", "admin", "official",
+      "department", "dept", "office", "agent", "representative", "rep",
+      "manager", "director", "team", "notify", "notification", "alert"
+    ].join("|") + ")", "i"),
+
     GENERIC_LINK_TEXT: new Set([
       "here", "click here", "read more", "more", "link", "this", "this link",
       "see more", "learn more", "continue", "details", "source", "source:",

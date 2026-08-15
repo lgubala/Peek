@@ -13,7 +13,7 @@
   function blank() {
     return {
       ok: false, title: "", byline: "", siteName: "", excerpt: "",
-      html: "", textLength: 0, minutes: 0, images: 0, reason: "", via: ""
+      nodes: [], textLength: 0, minutes: 0, images: 0, reason: "", via: ""
     };
   }
 
@@ -57,8 +57,12 @@
     out.images = s.images;
     out.textLength = text.length;
     out.minutes = Math.max(1, Math.round(text.length / 5 / 220));
-    out.html = frag.innerHTML.slice(0, 300 * 1024);
-    out.truncated = frag.innerHTML.length > 300 * 1024;
+
+    /* Crosses the message boundary as a node tree, never as markup, so the
+     * content script never parses HTML that came off the network. */
+    const tree = P.serialize.toTree(frag);
+    out.nodes = tree.nodes;
+    out.truncated = tree.truncated;
     return out;
   }
 
@@ -87,17 +91,17 @@
 
     /* A named selector beats a guess. */
     const site = selectorContent(doc, url);
-    let article = null;
+    let frag;
 
     if (site) {
-      article = {
-        title: (doc.querySelector("title") || {}).textContent || "",
-        byline: "", siteName: "", excerpt: "",
-        content: site.node.innerHTML,
-        textContent: site.node.textContent
-      };
+      /* Clone the element straight out of the parsed document. Going via
+       * innerHTML would serialise it back to a string only to parse it again,
+       * and Peek keeps markup strings out of its own code entirely. */
       out.via = site.sel;
+      frag = site.node.cloneNode(true);
+      out.title = P.text.squash((doc.querySelector("title") || {}).textContent).slice(0, 200);
     } else {
+      let article = null;
       try {
         article = new Readability(doc, { charThreshold: 250, keepClasses: false }).parse();
       } catch (_) {
@@ -105,24 +109,23 @@
         return out;
       }
       out.via = "readability";
+
+      if (!article || !article.content) {
+        out.reason = bodyText.length < 400
+          ? "Nothing readable in the HTML."
+          : "No article structure \u2014 this looks like a listing or an app, not a page to read.";
+        return out;
+      }
+
+      try { frag = P.platform.parse(article.content).body; }
+      catch (_) { out.reason = "Could not process the article."; return out; }
+
+      out.byline = P.text.squash(article.byline).slice(0, 120);
+      out.siteName = P.text.squash(article.siteName).slice(0, 60);
+      out.excerpt = P.text.squash(article.excerpt).slice(0, 300);
+      out.title = P.text.squash(article.title).slice(0, 200);
+      out.lang = article.lang || "";
     }
-
-    if (!article || !article.content) {
-      out.reason = bodyText.length < 400
-        ? "Nothing readable in the HTML."
-        : "No article structure \u2014 this looks like a listing or an app, not a page to read.";
-      return out;
-    }
-
-    let frag;
-    try { frag = P.platform.parse(article.content).body; }
-    catch (_) { out.reason = "Could not process the article."; return out; }
-
-    out.title = P.text.squash(article.title).slice(0, 200);
-    out.byline = P.text.squash(article.byline).slice(0, 120);
-    out.siteName = P.text.squash(article.siteName).slice(0, 60);
-    out.excerpt = P.text.squash(article.excerpt).slice(0, 300);
-    out.lang = article.lang || "";
 
     return finish(frag, out, Object.assign({ baseUrl: url }, opts));
   }

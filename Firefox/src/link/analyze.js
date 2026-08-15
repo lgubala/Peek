@@ -46,6 +46,55 @@
     return m ? m[1].toLowerCase() : "";
   }
 
+  /* --- who is on the other end of an email address -------------------- */
+  /* An address is a link too, and it is where a lot of fraud actually lives.
+   * The rules below judge the address itself, never the message around it. */
+  function inspectAddress(out, address, linkText) {
+    const at = String(address || "").lastIndexOf("@");
+    if (at < 1) return;
+
+    const local = address.slice(0, at).toLowerCase();
+    const domain = address.slice(at + 1).toLowerCase().replace(/^www\./, "");
+    if (!domain) return;
+
+    out.origin = P.tld.info(domain);
+    out.facts.push({ label: "Domain", value: domain });
+
+    const free = C().FREE_MAIL.has(domain);
+    const disposable = C().DISPOSABLE_MAIL.has(domain);
+    const roleish = C().ROLE_WORDS.test(local);
+
+    if (disposable) {
+      out.chips.push({ label: "Disposable address", tone: "bad" });
+      out.flags.push({ tone: "bad", text:
+        domain + " hands out throwaway mailboxes. Nobody who wants to be reachable uses one." });
+    } else if (free) {
+      out.chips.push({ label: "Free mail provider", tone: roleish ? "warn" : "neutral" });
+    }
+
+    /* The signal that matters: an address that speaks for an organisation,
+     * sent from a mailbox anyone can register in a minute. */
+    if (free && roleish) {
+      out.flags.push({ tone: "bad", text:
+        "This reads like an official address, but " + domain + " is a free mail provider " +
+        "anyone can sign up to. A real organisation writes from its own domain." });
+    }
+
+    /* A brand in the local part that the domain does not back up. */
+    const brand = C().BRANDS.find((b) => local.indexOf(b) !== -1 && domain.indexOf(b) === -1);
+    if (brand) {
+      out.flags.push({ tone: "bad", text:
+        'The address says "' + brand + '" but it is not at a ' + brand + " domain." });
+    }
+
+    /* Link text claiming one address while the link opens another. */
+    const shown = String(linkText || "").trim().toLowerCase();
+    if (/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/.test(shown) && shown !== address.toLowerCase()) {
+      out.flags.push({ tone: "bad", text:
+        'It reads "' + shown + '" but writes to ' + address.toLowerCase() + "." });
+    }
+  }
+
   /* --- the dissected URL, shown only when something is wrong ---------- */
 
   function dissect(u, reg, sub, params) {
@@ -92,9 +141,11 @@
     /* Non-http schemes answer themselves. */
     if (/^mailto:/i.test(href)) {
       out.kind = "mailto";
-      out.title = U().tryDecode(href.slice(7).split("?")[0]) || "Email address";
+      const address = U().tryDecode(href.slice(7).split("?")[0]);
+      out.title = address || "Email address";
       out.subtitle = "Opens your mail client";
       out.chips.push({ label: "Email", tone: "info" });
+      inspectAddress(out, address, linkText);
       return out;
     }
     if (/^tel:/i.test(href)) {

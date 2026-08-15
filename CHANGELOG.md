@@ -1,5 +1,37 @@
 # Changelog
 
+## 1.7.0
+
+- **Email addresses are inspected too.** An address is a link, and it is where
+  a lot of fraud actually lives. Peek now flags a disposable mailbox, a brand
+  in the local part the domain does not back up (`paypal.support@gmail.com`),
+  link text claiming one address while the link writes to another, and the
+  combination that matters most: an address that reads like an office
+  (`aid`, `claim`, `refund`, `support`, `department`…) sent from a free mail
+  provider. `enquiries@oxfam.org.uk`, `sales@company.net` and
+  `jana.kovacova@gmail.com` stay silent
+- Reworded the webmail notice. It said a link "is often a click-tracker",
+  which read as a verdict on the link the user was hovering — alarming and
+  wrong for an ordinary link. It now explains that Peek holds back on *mail*,
+  not on that link
+
+## 1.6.0
+
+- **Declared data collection.** `data_collection_permissions.required` is
+  `["none"]`, required by AMO for new submissions since 3 November 2025. Peek
+  transmits nothing to the developer or anyone else
+- **No `innerHTML` anywhere in Peek's own code.** The sanitized article used to
+  cross the message boundary as an HTML string and get assigned to `innerHTML`.
+  It now crosses as a plain node tree and is rebuilt with `createElement` and
+  `textContent`, re-checking every tag and attribute against the allowlist on
+  the receiving side. No HTML parser runs in the page context at all, and a
+  tampered message cannot introduce a tag that is not on the list
+- The explainer text is built from parts rather than markup
+- The site-selector path clones the matched element instead of round-tripping
+  it through `innerHTML`
+- Added `REVIEWER-NOTES.md` covering the two remaining linter warnings, which
+  are inside Mozilla's own Readability and operate on a detached document
+
 ## 1.5.1
 
 - **Light mode works.** The card sets a few critical styles inline so a

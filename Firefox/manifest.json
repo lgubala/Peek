@@ -1,13 +1,18 @@
 {
   "manifest_version": 2,
   "name": "Peek",
-  "version": "1.5.1",
+  "version": "1.7.0",
   "description": "Read a link before you open it. Peek shows what is actually on the other side, without opening the page.",
   "homepage_url": "https://github.com/lgubala/Peek",
   "browser_specific_settings": {
     "gecko": {
       "id": "peek@lgubala.dev",
-      "strict_min_version": "115.0"
+      "strict_min_version": "115.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
     }
   },
   "icons": {
@@ -38,6 +43,7 @@
       "src/reader/images.js",
       "src/reader/sanitize.js",
       "src/reader/tidy.js",
+      "src/reader/serialize.js",
       "src/reader/index.js",
       "src/sites/index.js",
       "src/sites/github.js",
@@ -68,6 +74,7 @@
         "src/link/analyze.js",
         "src/content/styles.js",
         "src/content/settings.js",
+        "src/content/build.js",
         "src/content/card.js",
         "src/content/hover.js",
         "src/content/index.js"

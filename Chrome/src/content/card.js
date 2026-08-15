@@ -66,7 +66,12 @@
       if (open) { open.remove(); return; }
       const box = el("div", "explain");
       box.dataset.help = btn.dataset.key;
-      box.innerHTML = text;                       // fixed strings, written here
+      for (const part of text) {
+        if (part === "\n") box.appendChild(document.createElement("br"));
+        else if (typeof part === "string") box.appendChild(document.createTextNode(part));
+        else if (part && part.b) box.appendChild(el("b", null, part.b));
+        else if (part && part.i) box.appendChild(el("i", null, part.i));
+      }
       parent.appendChild(box);
     };
     btn.dataset.key = "h" + Math.random().toString(36).slice(2, 7);
@@ -75,27 +80,35 @@
     return btn;
   }
 
+  /* Explainer copy, as parts rather than markup: plain strings, {b} for bold,
+   * {i} for italic, "\n" for a line break. */
   function originHelp(origin) {
     if (origin.kind === "abuse") {
-      return "<b>." + origin.tld + "</b> is a registry with a long history of abuse \u2014 " +
-        "names there are free or nearly free, so it is popular for throwaway phishing " +
-        "and malware hosts. Plenty of harmless sites use it too; it is a reason to look " +
-        "twice, not a verdict.";
+      return [
+        { b: "." + origin.tld }, " is a registry with a long history of abuse \u2014 names ",
+        "there are free or nearly free, so it is popular for throwaway phishing and ",
+        "malware hosts. Plenty of harmless sites use it too; it is a reason to look ",
+        "twice, not a verdict."
+      ];
     }
-    return "The domain ends in <b>." + origin.tld + "</b>, the registry for <b>" +
-      origin.label + "</b>. That is where the name was <i>registered</i> \u2014 it does not " +
-      "tell you where the server sits, who runs the site, or what language it is in. " +
-      "It is a clue about who you are dealing with, nothing more.";
+    return [
+      "The domain ends in ", { b: "." + origin.tld }, ", the registry for ",
+      { b: origin.label }, ". That is where the name was ", { i: "registered" },
+      " \u2014 it does not tell you where the server sits, who runs the site, or what ",
+      "language it is in. It is a clue about who you are dealing with, nothing more."
+    ];
   }
 
   function routeHelp(viaHost, destination) {
-    return "The link does not point at <b>" + destination + "</b> directly. It points at " +
-      "<b>" + viaHost + "</b>. Clicking it sends your browser there first, where the click " +
-      "is recorded \u2014 typically who you are, when, and which message the link came from \u2014 " +
-      "and that server then forwards you on.<br><br>" +
-      "Peek decoded the address hidden inside the link, so <b>" + destination + "</b> is where " +
-      "the link <i>says</i> it will send you. Only the middle server decides where you " +
-      "actually end up.";
+    return [
+      "The link does not point at ", { b: destination }, " directly. It points at ",
+      { b: viaHost }, ". Clicking it sends your browser there first, where the click is ",
+      "recorded \u2014 typically who you are, when, and which message the link came from \u2014 ",
+      "and that server then forwards you on.", "\n", "\n",
+      "Peek decoded the address hidden inside the link, so ", { b: destination },
+      " is where the link ", { i: "says" }, " it will send you. Only the middle server ",
+      "decides where you actually end up."
+    ];
   }
 
   function flagRow(f) {
@@ -148,8 +161,8 @@
     if (!article.images) hero(wrap, summary, settings);
 
     const body = el("div", "rbody");
-    /* Sanitized in the background against a tag and attribute allowlist. */
-    body.innerHTML = article.html;
+    /* Built from a node tree, element by element. Nothing here parses HTML. */
+    body.appendChild(P.build.fragment(article.nodes));
     wrap.appendChild(body);
 
     card.appendChild(wrap);
@@ -237,7 +250,7 @@
     /* the content itself */
     if (summary && summary.ingredients && summary.ingredients.length) {
       renderRecipe(card, summary, settings);
-    } else if (article && article.ok) {
+    } else if (article && article.ok && article.nodes && article.nodes.length) {
       renderArticle(card, article, summary, settings);
     } else if (result && result.ok) {
       renderSummaryOnly(card, summary, article, result, data, settings);
@@ -248,9 +261,11 @@
     } else if (data.disabled) {
       card.appendChild(el("div", "note", "Peek is switched off for this site."));
     } else if (data.pageNoFetch) {
+      /* Says why Peek is holding back on THIS PAGE. The old wording read as a
+       * verdict on the link, which was wrong and alarming for ordinary links. */
       card.appendChild(el("div", "note",
-        "Peek does not fetch from this page \u2014 a link here is often a click-tracker, " +
-        "and asking for it would register the click. Press L to fetch anyway."));
+        "Peek never fetches from your mail. Links in messages are often click-trackers, " +
+        "and asking for one would tell the sender you read it. Press L to fetch this one anyway."));
     } else if (!settings.autoPeek) {
       card.appendChild(el("div", "note", "Fetching is off. Press L to read this page."));
     }

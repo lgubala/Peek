@@ -68,6 +68,17 @@ results and the ones containing almonds mark themselves.
 
 Both unload when the browser closes. Permanent installs need store signing.
 
+## Email addresses
+
+An address is a link too. Hovering a `mailto:` shows its domain and warns about
+a disposable mailbox, a brand in the local part the domain does not support, or
+link text that claims one address while writing to another.
+
+The one worth knowing: an address that reads like an office — `aid`, `claim`,
+`refund`, `support`, `department` — sent from a free mail provider. A charity's
+operations manager does not write from Hotmail. Ordinary personal addresses at
+free providers say nothing, because there is nothing to say.
+
 ## What it ignores
 
 Peek skips navigation: menus, breadcrumbs, tab strips and footers. Those peeks
@@ -294,4 +305,5 @@ python3 docs/icon/make-icons.py Firefox/icons     # needs Pillow
 ## Licence
 
 MIT — see [LICENSE](LICENSE). Bundled third-party code in
-[THIRD-PARTY.md](THIRD-PARTY.md).
+[THIRD-PARTY.md](THIRD-PARTY.md), store-review notes in
+[REVIEWER-NOTES.md](REVIEWER-NOTES.md).
