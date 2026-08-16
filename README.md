@@ -10,7 +10,7 @@ The web is a corridor of doors with nothing written on them. Peek puts a window
 in each one.
 
 <p align="center">
-  <img src="docs/icon/preview.png" alt="Peeking at the cate" width="1400">
+  <img src="https://raw.githubusercontent.com/lgubala/Peek/refs/heads/main/docs/icon/preview.png" alt="Peeking at the cate" width="1400">
 </p>
 
 <!-- docs/screenshots/ -->
