@@ -9,27 +9,39 @@
  */
 
 const OFFSCREEN_PATH = "src/offscreen/offscreen.html";
-let creating = null;
 
-async function ensureOffscreen() {
-  const existing = await chrome.runtime.getContexts({
-    contextTypes: ["OFFSCREEN_DOCUMENT"],
-    documentUrls: [chrome.runtime.getURL(OFFSCREEN_PATH)]
+/* Memoised. Two lookups arriving together both awaited getContexts(), both saw
+ * nothing, and both called createDocument — the second rejecting with "Only a
+ * single offscreen document may be created". The promise is assigned
+ * synchronously so the second caller shares the first one's work. */
+let ensuring = null;
+
+function ensureOffscreen() {
+  if (ensuring) return ensuring;
+
+  ensuring = (async () => {
+    const existing = await chrome.runtime.getContexts({
+      contextTypes: ["OFFSCREEN_DOCUMENT"],
+      documentUrls: [chrome.runtime.getURL(OFFSCREEN_PATH)]
+    });
+    if (existing && existing.length) return;
+
+    await chrome.offscreen.createDocument({
+      url: OFFSCREEN_PATH,
+      reasons: ["DOM_PARSER"],
+      justification: "Parse and sanitize fetched HTML so link previews can be rendered safely."
+    });
+  })().catch((err) => {
+    ensuring = null;          // only clear on failure, so success stays memoised
+    throw err;
   });
-  if (existing && existing.length) return;
 
-  if (creating) { await creating; return; }
-
-  creating = chrome.offscreen.createDocument({
-    url: OFFSCREEN_PATH,
-    reasons: ["DOM_PARSER"],
-    justification: "Parse and sanitize fetched HTML so link previews can be rendered safely."
-  });
-  try { await creating; } finally { creating = null; }
+  return ensuring;
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || msg.type !== "peek:look") return false;
+  if (sender && sender.id && sender.id !== chrome.runtime.id) return false;
 
   (async () => {
     try {

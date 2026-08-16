@@ -24,7 +24,7 @@ Nothing is sent to the author or to anyone else.
   and session recorders do not fire. A peek is quieter than an actual visit.
 - **No history.** A fetch is not a navigation. Nothing enters your browsing
   history or your back button.
-- **No disk.** Responses are held in memory for five minutes and dropped.
+- **No disk.** Responses are held in memory for five minutes, then dropped by a sweep that runs every minute.
 
 ## What is never fetched
 

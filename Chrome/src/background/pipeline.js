@@ -54,6 +54,9 @@
       if (hopped.tooManyHops) {
         return { ok: false, reason: "Too many redirects to follow." };
       }
+      if (hopped.timedOut) {
+        return { ok: false, reason: "The redirects took too long to follow." };
+      }
       if (!res) return { ok: false, reason: "Could not reach the site." };
 
       const ctype = (res.headers.get("content-type") || "").toLowerCase();

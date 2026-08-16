@@ -11,6 +11,10 @@
 
   api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (!msg || msg.type !== "peek:look") return false;
+    /* Not exploitable today — there is no externally_connectable — but a
+     * message handler that does not check its sender is one line from being a
+     * problem the day one is added. */
+    if (sender && sender.id && sender.id !== api.runtime.id) return false;
 
     P.pipeline.look(msg.url, {
       images: !!msg.images

@@ -10,6 +10,25 @@
 (function (P) {
   "use strict";
 
+  /* Whole labels for the ambiguous words, substrings only for names that
+   * cannot mean anything else. Otherwise xxxlutz.de, a furniture chain, is
+   * refused as pornography. */
+  function blockedCategory(hostname) {
+    if (P.config.BLOCKED_SUBSTRINGS.test(hostname)) return true;
+    return String(hostname).toLowerCase().split(/[.-]/)
+      .some((label) => P.config.BLOCKED_LABELS.has(label));
+  }
+
+  /* An action is a route. Matching a verb anywhere in the path refuses
+   * ordinary headlines like /how-to-cancel-a-gym-membership. */
+  function looksLikeAction(pathname) {
+    if (P.config.ACTION_PATH.test(pathname)) return true;
+    if (P.config.ACTION_ROUTES.some((re) => re.test(pathname))) return true;
+
+    const segments = String(pathname).toLowerCase().split("/").filter(Boolean);
+    return segments.some((seg) => P.config.ACTION_SEGMENTS.indexOf(seg) !== -1);
+  }
+
   function check(rawUrl) {
     let u;
     try { u = new URL(rawUrl); }
@@ -24,10 +43,10 @@
     if (P.policy.forHost(u.hostname) === "disabled") {
       return { ok: false, reason: "Peek is switched off for this site." };
     }
-    if (P.config.BLOCKED_HOST.test(u.hostname)) {
+    if (blockedCategory(u.hostname)) {
       return { ok: false, reason: "Peek will not fetch this category of site." };
     }
-    if (P.config.ACTION_PATH.test(u.pathname)) {
+    if (looksLikeAction(u.pathname)) {
       return { ok: false, reason: "This link looks like it performs an action, not a page. Peek will not trigger it." };
     }
     for (const [k] of P.url.parseQuery(u.search)) {
@@ -38,5 +57,5 @@
     return { ok: true, url: u.href };
   }
 
-  P.gate = { check };
+  P.gate = { check, looksLikeAction, blockedCategory };
 })(self.Peek = self.Peek || {});

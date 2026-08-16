@@ -15,6 +15,7 @@
     GRACE_MS: 180,          // keep the card alive this long after leaving
     CARD_MAX_WIDTH: 420,    // px; the wide variant adds 40
     FETCH_TIMEOUT_MS: 7000,
+    CHAIN_BUDGET_MS: 12000,  // whole redirect chain, not per hop
     MAX_PARALLEL: 2,        // concurrent lookups
     CACHE_MS: 5 * 60 * 1000,
     BYTE_CAP: 640 * 1024,   // stop reading the response after this much
@@ -186,25 +187,62 @@
     /* Some links DO things rather than SHOW things. An automatic previewer
      * that ignores this will log people out and spend one-time tokens. */
 
+    /* An action is a *route*, not a word. `/logout` is a route;
+     * `/how-to-delete-your-facebook-account` is a headline that happens to
+     * contain a verb. Matching anywhere in the path refused seven of eight
+     * ordinary news articles, which reads to a user as "this is broken".
+     *
+     * Bare words here; gate.js anchors them to whole path segments. */
+    ACTION_SEGMENTS: [
+      "logout", "log-out", "log_out", "signout", "sign-out", "logoff", "log-off",
+      "unsubscribe", "optout", "opt-out", "unsub", "deactivate",
+      "reset-password", "resetpassword", "forgot-password",
+      "magic", "magic-link", "one-time", "onetime", "otp",
+      "verify-email", "confirm-email", "activate-account",
+      "accept-invite", "accept-invitation", "decline-invite",
+      "add-to-cart", "addtocart", "checkout", "place-order",
+      "delete", "destroy", "remove", "cancel", "revoke",
+      "approve", "reject", "upvote", "downvote"
+    ],
+
+    /* Routes that span two segments: /cart/add, /account/delete. */
+    ACTION_ROUTES: [
+      /\/(cart|basket|bag)\/(add|remove|delete)(\/|$)/i,
+      /\/(account|user|profile)\/(delete|close|deactivate)(\/|$)/i,
+      /\/(email|newsletter)\/(unsubscribe|optout)(\/|$)/i
+    ],
+
+    /* Click-trackers announce themselves. Specific enough to match anywhere. */
     ACTION_PATH: new RegExp([
-      "logout", "log-out", "signout", "sign-out", "log_off", "logoff",
-      "unsubscribe", "optout", "opt-out", "deactivate", "delete", "destroy",
-      "remove", "cancel", "confirm", "activate", "verify", "validate",
-      "reset-password", "resetpassword", "magic", "one-time", "onetime",
-      "checkout", "add-to-cart", "addtocart", "basket/add", "purchase",
-      "approve", "reject", "accept-invite", "join/", "vote", "upvote",
-      "clicks?\\.php", "/click/", "/track/", "/redirect\\.php"
+      "clicks?\\.php", "/click/", "/track/", "/trk/", "/redirect\\.php",
+      "/redir\\.php", "/out\\.php", "/go\\.php", "/link\\.php"
     ].join("|"), "i"),
 
     ACTION_PARAM: /^(token|auth|authcode|code|key|secret|otp|nonce|signature|sig|session|sessionid|confirm|activation|invite|magic|unsub|ticket|access_token|id_token)$/i,
 
     /* Categories Peek will not fetch on someone's behalf. Keyword matching is
      * shallow on purpose; a real deployment should bundle a category list. */
-    BLOCKED_HOST: new RegExp([
-      "porn", "xxx", "xvideo", "xhamster", "redtube", "youporn", "brazzers",
-      "onlyfans", "rule34", "hentai", "nsfw", "camsoda", "chaturbate",
-      "escort", "darkweb", "torrentz", "1337x", "thepiratebay"
+    /* Categories Peek will not fetch on someone's behalf.
+     *
+     * This is NOT a security feature and should not be mistaken for one — it
+     * stops nothing that lacks a rude word in its hostname, which is most
+     * malware. It exists so a stray hover does not pull down bytes the user
+     * never asked for.
+     *
+     * Two lists, because a plain keyword match on a hostname is how you refuse
+     * xxxlutz.de (a European furniture chain) and escortcarhire.co.uk.
+     * Unambiguous names may match anywhere; short ambiguous ones must be a
+     * whole label. */
+    BLOCKED_SUBSTRINGS: new RegExp([
+      "xvideos", "xhamster", "redtube", "youporn", "pornhub", "brazzers",
+      "onlyfans", "rule34", "hentai", "camsoda", "chaturbate", "stripchat",
+      "bongacams", "thepiratebay", "1337x", "torrentz"
     ].join("|"), "i"),
+
+    BLOCKED_LABELS: new Set([
+      "porn", "porno", "pornos", "xxx", "nsfw", "escort", "escorts",
+      "sexcam", "sexcams", "camgirl", "camgirls", "darkweb"
+    ]),
 
     /* --- page furniture the reader removes ----------------------------- */
 

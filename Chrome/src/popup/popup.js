@@ -7,11 +7,13 @@
 
   const api = typeof browser !== "undefined" ? browser : chrome;
 
-  /* Kept in step with DEFAULTS in config/rules.js. */
-  const DEFAULTS = {
+  /* Read from config/rules.js, loaded by popup.html, so there is one
+   * definition rather than two that promise to stay in step and do not. */
+  const DEFAULTS = (self.Peek && self.Peek.config && self.Peek.config.DEFAULTS) || {
     enabled: true, autoPeek: true, images: true, skipNav: true,
     theme: "auto", dwell: 320, userDisabled: []
   };
+
   const TOGGLES = ["enabled", "autoPeek", "skipNav", "images"];
 
   const $ = (id) => document.getElementById(id);
@@ -127,7 +129,11 @@
       $("dwell").value = state.dwell;
       $("dwellVal").textContent = state.dwell + " ms";
       $("dwell").addEventListener("input", (e) => { $("dwellVal").textContent = e.target.value + " ms"; });
-      $("dwell").addEventListener("change", (e) => save({ dwell: parseInt(e.target.value, 10) }));
+      $("dwell").addEventListener("change", (e) => {
+        /* Clamp: a hostile or stale stored value should not disable hovering. */
+        const v = parseInt(e.target.value, 10);
+        save({ dwell: isFinite(v) ? Math.min(2000, Math.max(80, v)) : DEFAULTS.dwell });
+      });
 
       paintSite();
       paintTheme();

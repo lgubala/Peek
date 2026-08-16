@@ -1,5 +1,49 @@
 # Changelog
 
+## 1.11.0 — correctness
+
+Acting on an independent code review. Everything here is a bug fix.
+
+- **The gate refused ordinary articles.** Action words were matched anywhere in
+  the path, so `/how-to-delete-your-facebook-account`,
+  `/how-to-cancel-a-gym-membership` and `/why-young-people-dont-vote` were all
+  told "this link looks like it performs an action". Seven of eight test
+  articles were refused. An action is a *route*, so those words now have to be
+  a whole path segment. `/logout` is refused; a headline containing "logout" is
+  not
+- **The category list refused a furniture chain.** `xxx` matched `xxxlutz.de`
+  and `escort` matched `escortcarhire.co.uk`. Unambiguous names still match
+  anywhere; short ambiguous ones must now be a whole hostname label
+- **Scrolling inside the card dismissed it.** A capture-phase `scroll` listener
+  on `window` fires for descendants, which after shadow-DOM retargeting
+  included the card's own scroll container — so scrolling a long article closed
+  it. Scrolling the content is the entire point of holding real content. Page
+  scrolls now *reposition* the card and only hide it once the link leaves the
+  viewport
+- **Fetched pages are decoded with the right charset.** Everything was decoded
+  as UTF-8, so any `windows-1250`, `ISO-8859-2` or `windows-1251` page came
+  back as mojibake — including sme.sk, the worked example in Peek's own README.
+  The header wins, then a BOM, then the document's own `<meta charset>`
+- **Chrome never loaded the per-site policy in the background**, so the gate's
+  per-site check silently did nothing there. The README's claim that switching
+  a site off stops the request as well as the card was false on Chrome
+- **Two lookups at once could both create the offscreen document**, the second
+  failing with "Only a single offscreen document may be created"
+- The redirect chain has one time budget (12s) instead of six independent
+  timeouts totalling 42s
+- Cache evicts least-recently-*used* rather than first-inserted, and sweeps
+  expired entries on a timer, so PRIVACY.md's "five minutes, then vanish" is
+  now true rather than approximately true
+- The sanitizer walk has a depth cap, like the two other tree walks already did
+- Message handlers check the sender is this extension
+- The popup reads `DEFAULTS` from `config/rules.js` instead of keeping a second
+  copy with a comment promising they would stay in step
+- **Open** now says "Open destination" when a redirect was unwrapped, explains
+  in its tooltip that it is skipping the tracker, and shift-click goes the long
+  way — the behaviour existed but was invisible, and `unwrap()` follows generic
+  keys like `u` and `to`, so it is occasionally wrong
+- `request()` no longer accepts a `cap` argument it ignored
+
 ## 1.10.0
 
 Nothing new; what was already there, done properly.

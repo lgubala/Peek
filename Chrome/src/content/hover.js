@@ -219,6 +219,17 @@
     state = null;
   }
 
+  /* True when the event came from inside our own card. composedPath crosses
+   * the shadow boundary; the target check covers engines that do not have it. */
+  function insideCard(e) {
+    if (!card) return false;
+    if (e.composedPath) {
+      const p = e.composedPath();
+      return p.indexOf(card) !== -1 || (host && p.indexOf(host) !== -1);
+    }
+    return e.target === card || (card.contains && card.contains(e.target));
+  }
+
   function scheduleHide() {
     clearTimeout(hideTimer);
     hideTimer = setTimeout(hide, P.config.GRACE_MS);
@@ -284,7 +295,32 @@
       }
     }, true);
 
-    window.addEventListener("scroll", () => { clearTimeout(dwellTimer); hide(); }, true);
+    /* A capture-phase listener on window fires for scrolls on descendants too,
+     * and after shadow-DOM retargeting that includes the card's own scroll
+     * container — so scrolling a long article inside the card used to dismiss
+     * it. Since scrolling the content is the whole point of holding real
+     * content, that was the worst possible thing to get wrong.
+     *
+     * Page scrolls now reposition rather than hide, which is what Wikipedia's
+     * Page Previews does and feels far less twitchy. The card only goes when
+     * its link has scrolled out of view. */
+    let scrollFrame = null;
+    window.addEventListener("scroll", (e) => {
+      if (insideCard(e)) return;
+      clearTimeout(dwellTimer);
+      if (!currentAnchor || card.style.display !== "block") return;
+
+      if (scrollFrame) return;
+      scrollFrame = requestAnimationFrame(() => {
+        scrollFrame = null;
+        if (!currentAnchor) return;
+        const rect = currentAnchor.getBoundingClientRect();
+        const visible = rect.bottom > 0 && rect.top < window.innerHeight &&
+                        rect.right > 0 && rect.left < window.innerWidth;
+        if (visible) place(rect);
+        else hide();
+      });
+    }, true);
     window.addEventListener("blur", hide);
   }
 

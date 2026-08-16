@@ -6,8 +6,14 @@
 (function (P) {
   "use strict";
 
+  /* Firefox does this in background/index.js. Without it the gate's per-site
+   * check sees an empty list on Chrome and silently does nothing — the README
+   * promises that switching a site off stops the request as well as the card. */
+  P.policy.load(chrome);
+
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (!msg || msg.type !== "peek:offscreen:look") return false;
+    if (sender && sender.id && sender.id !== chrome.runtime.id) return false;
 
     P.pipeline.look(msg.url, {
       images: !!msg.images

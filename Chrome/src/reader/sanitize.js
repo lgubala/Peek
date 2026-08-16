@@ -52,7 +52,12 @@
      * scanned too — otherwise a <script> inside an unknown tag would be moved
      * out and never checked. Resuming at the first hoisted node guarantees
      * every node is inspected exactly once. */
-    (function walk(node) {
+    /* build.js caps at 40 and serialize.js at 32; this had none, so deeply
+     * nested hostile HTML could exhaust the stack in the background context. */
+    const MAX_DEPTH = 60;
+
+    (function walk(node, depth) {
+      if (depth > MAX_DEPTH) { node.textContent = ""; dropped++; return; }
       let child = node.firstChild;
 
       while (child) {
@@ -109,10 +114,10 @@
           images++;
         }
 
-        walk(child);
+        walk(child, depth + 1);
         child = next;
       }
-    })(root);
+    })(root, 0);
 
     return { dropped, images };
   }

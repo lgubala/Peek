@@ -10,7 +10,7 @@ The web is a corridor of doors with nothing written on them. Peek puts a window
 in each one.
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/lgubala/Peek/refs/heads/main/docs/icon/preview.png" alt="Peeking at the cate" width="1400">
+  <img src="docs/icon/preview.png" alt="The Peek icon at 16, 32, 48, 96 and 128px, on a light and a dark toolbar" width="430">
 </p>
 
 <!-- docs/screenshots/ -->
@@ -205,6 +205,7 @@ vendor/readability.js        Mozilla Readability 0.6.0 (Apache-2.0)
 src/
   config/rules.js            timings, caps, junk patterns, safety rules
   config/sites.js            per-site: disabled, selectors, paywall notes
+  config/trackers.js         tracking parameters, families and who owns them
   common/                    log, text, URL parsing
   link/                      stage 0: what the link alone reveals
   extract/                   JSON-LD and OpenGraph -> facts

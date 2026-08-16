@@ -309,9 +309,19 @@
 
     const right = el("span");
     if (result && result.ok) {
-      const open = el("button", "openbtn", "Open \u2197");
-      open.addEventListener("click", () => {
-        window.open(data.lookUrl, "_blank", "noopener");
+      /* When a redirect was unwrapped, Open goes to the destination rather
+       * than through the tracker. That is a feature, but it was invisible —
+       * and unwrap() follows generic keys like u, r and to, so it is
+       * occasionally wrong. Name it, and keep the original one click away. */
+      const viaHop = !!data.via;
+      const open = el("button", "openbtn", viaHop ? "Open destination \u2197" : "Open \u2197");
+      open.title = viaHop
+        ? "Opens " + data.title + " directly, skipping " + data.via.host +
+          ". Shift-click to go the long way instead."
+        : "Open this page";
+      open.addEventListener("click", (e) => {
+        const target = (viaHop && e.shiftKey) ? data.href : data.lookUrl;
+        window.open(target, "_blank", "noopener");
         P.hover.hide();
       });
       right.appendChild(open);

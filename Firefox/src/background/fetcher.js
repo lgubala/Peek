@@ -18,8 +18,46 @@
     cache: "no-store"
   };
 
+  /* A page is not necessarily UTF-8. Central European, Cyrillic and older CMS
+   * sites still serve windows-1250, ISO-8859-2, windows-1251 and friends —
+   * sme.sk, the worked example in Peek's own README, is exactly that kind of
+   * site. Decoding those as UTF-8 produces "Ä?ÃtajĂş", and a card full of
+   * mojibake reads as the *site* being broken. */
+  function charsetFrom(headerValue, bytes) {
+    /* 1. The header is authoritative when it says anything. */
+    const fromHeader = /charset\s*=\s*["']?([\w-]+)/i.exec(headerValue || "");
+    if (fromHeader) return fromHeader[1];
+
+    /* 2. A BOM outranks anything the document claims. */
+    if (bytes.length >= 3 && bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF) return "utf-8";
+    if (bytes.length >= 2 && bytes[0] === 0xFF && bytes[1] === 0xFE) return "utf-16le";
+    if (bytes.length >= 2 && bytes[0] === 0xFE && bytes[1] === 0xFF) return "utf-16be";
+
+    /* 3. The document's own declaration, read from the first couple of KB.
+     *    latin1 is safe for sniffing: every byte maps to a character, so the
+     *    ASCII tag names survive whatever the real encoding turns out to be. */
+    const head = new TextDecoder("latin1").decode(bytes.subarray(0, 2048));
+    const meta = /<meta[^>]+charset\s*=\s*["']?([\w-]+)/i.exec(head) ||
+                 /<meta[^>]+content\s*=\s*["'][^"']*charset=([\w-]+)/i.exec(head);
+    if (meta) return meta[1];
+
+    return "utf-8";
+  }
+
+  function decode(bytes, headerValue) {
+    const label = charsetFrom(headerValue, bytes);
+    try {
+      return new TextDecoder(label, { fatal: false }).decode(bytes);
+    } catch (_) {
+      /* An unrecognised label throws rather than falling back. */
+      P.log.warn("unknown charset", label);
+      return new TextDecoder("utf-8", { fatal: false }).decode(bytes);
+    }
+  }
+
   async function readCapped(res, cap) {
     cap = cap || P.config.BYTE_CAP;
+    const ctype = res.headers && res.headers.get ? res.headers.get("content-type") : "";
 
     /* Stream so the connection closes as soon as we have enough. */
     if (res.body && res.body.getReader) {
@@ -40,13 +78,11 @@
         buf.set(c.subarray(0, Math.min(c.length, total - off)), off);
         off += c.length;
       }
-      return {
-        text: new TextDecoder("utf-8", { fatal: false }).decode(buf),
-        bytes: total,
-        truncated: total >= cap
-      };
+      return { text: decode(buf, ctype), bytes: total, truncated: total >= cap };
     }
 
+    /* No streaming body: the browser has already decoded, using the same
+     * header we would have read. */
     const text = await res.text();
     return { text: text.slice(0, cap), bytes: text.length, truncated: text.length > cap };
   }
@@ -61,9 +97,16 @@
     const chain = [url];
     let current = url;
 
+    /* Six hops at the per-request timeout is 42 seconds before the card
+     * resolves. The whole chain gets one budget. */
+    const deadline = Date.now() + P.config.CHAIN_BUDGET_MS;
+
     for (let hop = 0; hop < MAX_HOPS; hop++) {
+      const left = deadline - Date.now();
+      if (left <= 0) return { res: null, chain, timedOut: true };
+
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), P.config.FETCH_TIMEOUT_MS);
+      const timer = setTimeout(() => ctrl.abort(), Math.min(P.config.FETCH_TIMEOUT_MS, left));
       let res;
       try {
         res = await fetch(current, Object.assign({}, BASE_INIT, {
@@ -105,7 +148,7 @@
   }
 
   /* Raw fetch with all the guarantees applied. Returns null on any failure. */
-  async function request(url, headers, cap) {
+  async function request(url, headers) {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), P.config.FETCH_TIMEOUT_MS);
     try {
