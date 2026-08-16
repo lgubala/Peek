@@ -21,7 +21,29 @@
    * asked. Hovering down a page of results told ten sites you looked when you
    * looked at one. */
   let requestSeq = 0, requestId = null;
-  let host = null, root = null, card = null;
+
+  /* The link under the pointer, whether or not the trigger is satisfied. Kept
+   * so that pressing the modifier while already resting on a link summons the
+   * card, instead of demanding you move the mouse again. */
+  let underPointer = null;
+  let modifierUsed = false;
+
+  /* Pointer speed, a mouse button held down, and an active text selection are
+   * all evidence that the user is doing something other than considering a
+   * link. Every hover-preview extension collects one-star reviews for
+   * appearing when it was not wanted. */
+  let lastMove = null, speed = 0, dragging = false;
+  let host = null, root = null, card = null, announcer = null;
+  let returnFocusTo = null;
+
+  /* Escape hides the card and hands focus back to the link — which fires
+   * focusin, which shows the card again. Without this, Escape does nothing at
+   * all for a keyboard user. Cleared as soon as focus goes anywhere else. */
+  let dismissed = null;
+
+  /* A pinned card stays until dismissed. Without it, reading a long article
+   * means never letting the pointer stray, which is not reading. */
+  let pinned = false;
 
   /* --- shadow host ----------------------------------------------------- */
 
@@ -49,6 +71,12 @@
 
     card = document.createElement("div");
     card.className = "card";
+    /* Reachable, announced, and dismissible. Keyboard focus already summoned
+     * the card, but it was a half-feature: nothing said it had appeared, and
+     * nothing could get into it. */
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-label", "Link preview");
+    card.setAttribute("tabindex", "-1");
     /* Critical layout inline, so a stylesheet blocked by a strict page CSP
      * degrades to ugly rather than invisible. Colours go through var() with a
      * literal fallback: when the sheet loaded the theme wins, and when it did
@@ -64,6 +92,16 @@
     card.addEventListener("mouseenter", () => clearTimeout(hideTimer));
     card.addEventListener("mouseleave", scheduleHide);
     root.appendChild(card);
+
+    /* Screen readers do not notice a shadow-root subtree appearing. A polite
+     * live region says so, without stealing focus from what the user is doing. */
+    announcer = document.createElement("div");
+    announcer.setAttribute("aria-live", "polite");
+    announcer.setAttribute("role", "status");
+    announcer.style.cssText =
+      "position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;" +
+      "clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0;";
+    root.appendChild(announcer);
 
     applyTheme();
     document.documentElement.appendChild(host);
@@ -103,10 +141,24 @@
     requestAnimationFrame(() => card.classList.add("in"));
   }
 
+  /* Said once per card, and kept short: a screen reader user does not want the
+   * whole article read out because they tabbed past a link. */
+  function announce(data, result) {
+    if (!announcer) return;
+    const parts = ["Preview of " + data.title];
+    if (result && result.ok && result.summary && result.summary.kind) {
+      parts.push(result.summary.kind.toLowerCase());
+    }
+    if (data.flags.length) parts.push("warning: " + data.flags[0].text);
+    parts.push("press F6 to read it");
+    announcer.textContent = parts.join(". ");
+  }
+
   function draw() {
     if (!currentData) return;
     const rect = currentAnchor ? currentAnchor.getBoundingClientRect() : null;
     P.card.render(card, currentData, state, P.settings.values);
+    announce(currentData, state && state !== "loading" ? state : null);
     /* Every peek starts at the top, even after scrolling the previous one. */
     const scroller = card.querySelector(".scroll");
     if (scroller) scroller.scrollTop = 0;
@@ -211,10 +263,13 @@
 
   function show(anchor, opts) {
     if (orphaned || silencedHere()) return;
+    /* A pinned card is the user's; a passing hover must not replace it. */
+    if (pinned && anchor !== currentAnchor) return;
     abandon();                                 // whatever we were fetching, we are not now
+    const asked = deliberate() || (opts && opts.force);
     /* Also checked in eligible(), but guarded here so nothing can route
      * around it. `force` is how __peek.probe() looks at a nav link anyway. */
-    if (P.settings.values.skipNav && !(opts && opts.force) && P.nav.isNavLink(anchor)) return;
+    if (!asked && P.settings.values.skipNav && P.nav.isNavLink(anchor)) return;
     ensureHost();
     state = null;
 
@@ -222,22 +277,25 @@
     try { data = P.analyze.analyze(anchor, location.href); }
     catch (e) { P.log.warn("analyze failed for", anchor.href, e); return; }
 
-    /* Sites Peek stays silent on get nothing at all — no card, no request. */
-    if (data.disabled && !(opts && opts.force)) return;
+    /* Sites Peek stays silent on get nothing at all — unless you asked. */
+    if (data.disabled && !asked) return;
 
     currentData = data;
     currentAnchor = anchor;
     draw();
 
     /* pageNoFetch pages still get a card; they just never fetch on their own.
-     * Pressing L is a deliberate act and still works. */
-    const auto = P.settings.values.autoPeek && !data.pageNoFetch;
-    if (data.lookable && (auto || (opts && opts.force))) lookup();
+     * Holding the trigger, or pressing L, is a deliberate act and still does. */
+    const auto = P.settings.values.autoPeek && (!data.pageNoFetch || deliberate());
+    if (data.lookable && (auto || asked)) lookup();
   }
 
   function hide() {
     abandon();
+    pinned = false;
     if (!card) return;
+    if (announcer) announcer.textContent = "";
+    returnFocusTo = null;
     card.classList.remove("in");
     card.style.display = "none";
     currentAnchor = null;
@@ -256,10 +314,62 @@
     return e.target === card || (card.contains && card.contains(e.target));
   }
 
+  /* Start the dwell timer for a link. */
+  function arm(a) {
+    if (a === currentAnchor || a === pendingAnchor) { clearTimeout(hideTimer); return; }
+    const why = busy();
+    if (why) { P.log.info("not now:", why); return; }
+    if (deliberate()) modifierUsed = true;
+    pendingAnchor = a;
+    clearTimeout(dwellTimer);
+    dwellTimer = setTimeout(() => { pendingAnchor = null; show(a); },
+                            P.settings.values.dwell || P.config.DWELL_MS);
+  }
+
   function scheduleHide() {
+    if (pinned) return;
     clearTimeout(hideTimer);
     hideTimer = setTimeout(hide, P.config.GRACE_MS);
   }
+
+  function setPinned(on) {
+    pinned = !!on;
+    if (pinned) clearTimeout(hideTimer);
+    draw();
+  }
+
+  /* --- what summons the card ---------------------------------------------- */
+
+  const MODIFIER = { alt: "altKey", shift: "shiftKey", ctrl: "ctrlKey" };
+  const KEY_NAME = { alt: "Alt", shift: "Shift", ctrl: "Control" };
+
+  const triggerKey = () => MODIFIER[P.settings.values.trigger] || null;
+
+  /* Reasons not to react, however long the pointer rests. */
+  function busy() {
+    if (dragging) return "dragging";
+    if (speed > P.config.PASSING_SPEED) return "passing through";
+    try {
+      const sel = window.getSelection();
+      /* Selecting text often ends with the pointer parked on a link. */
+      if (sel && !sel.isCollapsed && String(sel).trim()) return "text is selected";
+    } catch (_) { /* no selection API */ }
+    return null;
+  }
+
+  /* True when the user has asked for a peek, rather than merely moved the
+   * mouse across a link. */
+  function summoned(e) {
+    const key = triggerKey();
+    if (!key) return true;                     // plain hover
+    return !!(e && e[key]);
+  }
+
+  /* A held modifier is an explicit request, so the guesses Peek makes in hover
+   * mode — skip navigation, stay off some sites, never fetch from webmail —
+   * all give way to it. The safety gate does not: a link that logs you out is
+   * still not fetched, however deliberately you hovered it. */
+  const deliberate = () => !!triggerKey();
 
   /* --- events ----------------------------------------------------------- */
 
@@ -268,8 +378,9 @@
     if (a.closest("[data-peek]")) return false;
 
     /* Menus, breadcrumbs and footers: little to say, and the card would sit
-     * on top of the row of links you are reading past. */
-    if (P.settings.values.skipNav && P.nav.isNavLink(a)) return false;
+     * on top of the row of links you are reading past. Skipped only when Peek
+     * is guessing; if you held the key, you meant this link. */
+    if (!deliberate() && P.settings.values.skipNav && P.nav.isNavLink(a)) return false;
 
     const r = a.getBoundingClientRect();
     return r.width >= 4 && r.height >= 4;
@@ -279,17 +390,38 @@
     document.addEventListener("mouseover", (e) => {
       if (orphaned || !P.settings.values.enabled || silencedHere()) return;
       const a = e.target.closest && e.target.closest("a[href]");
-      if (!eligible(a)) return;
-      if (a === currentAnchor || a === pendingAnchor) { clearTimeout(hideTimer); return; }
-      pendingAnchor = a;
-      clearTimeout(dwellTimer);
-      dwellTimer = setTimeout(() => { pendingAnchor = null; show(a); },
-                              P.settings.values.dwell || P.config.DWELL_MS);
+      underPointer = a && a.href ? a : null;
+      if (!eligible(a) || !summoned(e)) return;
+      arm(a);
+    }, true);
+
+    /* Pressing the modifier while already resting on a link should work.
+     * Requiring the mouse to move first makes the feature feel broken. */
+    document.addEventListener("keydown", (e) => {
+      if (orphaned || !P.settings.values.enabled || silencedHere()) return;
+      const key = triggerKey();
+      if (!key || !e[key] || e.repeat) return;
+      if (!underPointer || !eligible(underPointer)) return;
+      if (underPointer === currentAnchor) return;
+      arm(underPointer);
+    }, true);
+
+    /* Firefox on Windows and Linux focuses the menu bar when Alt is tapped on
+     * its own. If Peek used the key, swallow the release so the menu does not
+     * appear. Nothing to do about the platforms where the OS gets there first,
+     * which is why "shift" exists in the settings. */
+    document.addEventListener("keyup", (e) => {
+      if (!modifierUsed) return;
+      if (e.key === KEY_NAME[P.settings.values.trigger]) {
+        modifierUsed = false;
+        e.preventDefault();
+      }
     }, true);
 
     document.addEventListener("mouseout", (e) => {
       const a = e.target.closest && e.target.closest("a[href]");
       if (!a) return;
+      if (a === underPointer) underPointer = null;
       const to = e.relatedTarget;
       if (to && to.closest && to.closest("a[href]") === a) return;  // still inside the link
       pendingAnchor = null;
@@ -300,12 +432,38 @@
     document.addEventListener("focusin", (e) => {
       if (orphaned || !P.settings.values.enabled || silencedHere()) return;
       const a = e.target.closest && e.target.closest("a[href]");
+      if (a !== dismissed) dismissed = null;
+      if (a && a === dismissed) return;        // just dismissed; do not spring back
       if (eligible(a)) show(a);
     }, true);
     document.addEventListener("focusout", scheduleHide, true);
 
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") { clearTimeout(dwellTimer); hide(); }
+      if (e.key === "Escape") {
+        clearTimeout(dwellTimer);
+        const back = returnFocusTo || currentAnchor;
+        hide();
+        dismissed = back || null;
+        /* Put the caret back where it came from, or Escape strands the user
+         * at the top of the document. */
+        if (back && back.focus) { try { back.focus(); } catch (_) { /* gone */ } }
+      }
+
+      /* F6 moves between panes in both browsers, which is what this is. Tab is
+       * left alone: hijacking it would break the page's own tab order. */
+      if (e.key === "F6" && card && card.style.display === "block") {
+        e.preventDefault();
+        if (root && root.activeElement) {
+          const back = returnFocusTo;
+          if (back && back.focus) back.focus();
+        } else {
+          /* The link, not whatever happened to have focus. If the card was
+           * summoned by the mouse, activeElement is the body, and Escape
+           * would strand the user at the top of the document. */
+          returnFocusTo = currentAnchor || document.activeElement;
+          card.focus();
+        }
+      }
 
       if ((e.key === "l" || e.key === "L") && currentData && !state &&
           !e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -347,11 +505,30 @@
         else hide();
       });
     }, true);
-    window.addEventListener("blur", hide);
+    /* Speed is measured from the moves themselves rather than from a timer,
+     * so a stationary pointer decays to zero on the next move. */
+    document.addEventListener("mousemove", (e) => {
+      const now = Date.now();
+      if (lastMove) {
+        const dt = now - lastMove.t;
+        if (dt > 0) {
+          const dx = e.clientX - lastMove.x, dy = e.clientY - lastMove.y;
+          const px = Math.sqrt(dx * dx + dy * dy);
+          /* Smoothed, so one jumpy sample does not suppress a real hover. */
+          speed = speed * 0.4 + (px / dt) * 1000 * 0.6;
+        }
+      }
+      lastMove = { x: e.clientX, y: e.clientY, t: now };
+    }, { passive: true, capture: true });
+
+    document.addEventListener("mousedown", () => { dragging = true; }, true);
+    document.addEventListener("mouseup", () => { dragging = false; }, true);
+    window.addEventListener("blur", () => { dragging = false; hide(); });
   }
 
   P.hover = {
-    attach, show, hide, lookup, applyTheme, silencedHere, abandon,
+    attach, show, hide, lookup, applyTheme, silencedHere, abandon, summoned, busy, setPinned,
+    get pinned() { return pinned; },
     get requestId() { return requestId; },
     get orphaned() { return orphaned; },
     get data() { return currentData; },

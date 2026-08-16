@@ -10,7 +10,38 @@ first three cannot work, because a handler is code you have to maintain.
 | 3 | `config/sites.js` → `SITE_NOTES` | You only want to warn about a paywall or login wall |
 | 4 | `src/sites/*.js` | The content is **not in the HTML at all** |
 
-## Writing a handler
+## The easy way: a data entry
+
+If the site has a public API that answers the question, it does not need code.
+Add an entry to `declared.js`:
+
+```js
+D({
+  name: "wikipedia",
+  match: /^https?:\/\/([a-z-]{2,12})\.wikipedia\.org\/wiki\/([^?#]+)/i,
+  api: (m) => `https://${m[1]}.wikipedia.org/api/rest_v1/page/summary/${m[2]}`,
+  map: (j) => ({
+    kind: "Encyclopedia",
+    heading: j.title,
+    description: j.extract,
+    image: j.thumbnail?.source,
+    metrics: [j.description]
+  })
+});
+```
+
+- `match` decides which URLs are yours; its captures are passed to the rest.
+- `api` returns the endpoint. Keyless public endpoints only — Peek ships no
+  credentials and asks for none.
+- `map` returns what the card shows. Return `null` and Peek falls through to
+  the ordinary fetch, which is what you want when the API answers with nothing
+  useful.
+- `article` is optional: return an HTML string and it is cleaned like any other
+  content.
+
+That covers most sites. Reach for a code handler only when it does not.
+
+## Writing a code handler
 
 A handler is an object with `name`, `match(url)` and `run(url, opts, ctx)`.
 `run` returns a result, or `null` to fall through to the normal fetch.

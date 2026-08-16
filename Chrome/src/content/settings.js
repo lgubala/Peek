@@ -29,6 +29,9 @@
             if (stored[k] !== undefined) values[k] = stored[k];
           }
         }
+        /* images was a boolean before 1.15. Anyone upgrading has true or
+         * false stored; map it rather than silently resetting their choice. */
+        if (typeof values.images === "boolean") values.images = values.images ? "any" : "off";
         return values;
       }).catch(() => values);
     } catch (_) { return Promise.resolve(values); }

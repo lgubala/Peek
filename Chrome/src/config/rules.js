@@ -12,6 +12,11 @@
     /* --- timing and limits ------------------------------------------- */
 
     DWELL_MS: 320,          // rest this long on a link before Peek reacts
+    DWELL_MAX_MS: 1500,     // the slowest the popup slider goes
+
+    /* A pointer crossing a link on its way somewhere else is not intent.
+     * Measured over the last couple of moves, in pixels per second. */
+    PASSING_SPEED: 1100,
     GRACE_MS: 180,          // keep the card alive this long after leaving
     CARD_MAX_WIDTH: 420,    // px; the wide variant adds 40
     FETCH_TIMEOUT_MS: 7000,
@@ -222,24 +227,25 @@
 
     /* Categories Peek will not fetch on someone's behalf. Keyword matching is
      * shallow on purpose; a real deployment should bundle a category list. */
-    /* Categories Peek will not fetch on someone's behalf.
+    /* Categories Peek does not fetch unprompted.
      *
-     * This is NOT a security feature and should not be mistaken for one — it
-     * stops nothing that lacks a rude word in its hostname, which is most
-     * malware. It exists so a stray hover does not pull down bytes the user
-     * never asked for.
+     * Named for what it does rather than what it might be mistaken for. It is
+     * NOT a security feature: it stops nothing that lacks a rude word in its
+     * hostname, which is most malware, and it never will — a keyword list
+     * cannot be one. Its whole job is that a stray hover should not pull down
+     * bytes nobody asked for.
      *
      * Two lists, because a plain keyword match on a hostname is how you refuse
      * xxxlutz.de (a European furniture chain) and escortcarhire.co.uk.
      * Unambiguous names may match anywhere; short ambiguous ones must be a
      * whole label. */
-    BLOCKED_SUBSTRINGS: new RegExp([
+    NOT_FETCHED_SUBSTRINGS: new RegExp([
       "xvideos", "xhamster", "redtube", "youporn", "pornhub", "brazzers",
       "onlyfans", "rule34", "hentai", "camsoda", "chaturbate", "stripchat",
       "bongacams", "thepiratebay", "1337x", "torrentz"
     ].join("|"), "i"),
 
-    BLOCKED_LABELS: new Set([
+    NOT_FETCHED_LABELS: new Set([
       "porn", "porno", "pornos", "xxx", "nsfw", "escort", "escorts",
       "sexcam", "sexcams", "camgirl", "camgirls", "darkweb"
     ]),
@@ -302,8 +308,34 @@
     /* --- defaults the popup can override -------------------------------- */
     DEFAULTS: {
       enabled: true,
+
+      /* What summons the card.
+       *
+       *   "alt" | "shift" | "ctrl"   hold the key and hover
+       *   "hover"                    plain hover, the ambient original
+       *
+       * A modifier is the honest default. Plain hover means Peek decides what
+       * you meant, which is why it needed a list of sites to stay off, a rule
+       * for navigation links, and a rule for webmail — three sets of guesses
+       * about intent. Holding a key *is* the intent, so a modifier trigger
+       * overrides all three: ask for a peek on YouTube, in a menu, or in your
+       * inbox, and you get one.
+       *
+       * Note for anyone changing the default: on Windows and Linux, tapping
+       * Alt on its own focuses the browser's menu bar. Peek suppresses that
+       * when it used the key, but "shift" avoids the question entirely. */
+      trigger: "alt",
+
       autoPeek: true,     // fetch on hover; off makes Peek entirely request-free
-      images: true,
+      /* "off" | "same" | "any"
+       *
+       * Images are the largest remaining way a fetched page can reach your
+       * machine: Peek never runs the page's JavaScript, but with images on
+       * your browser still decodes bytes from that server, and decoders have
+       * had zero-click bugs (libwebp CVE-2023-4863). "same" is a middle
+       * ground — pictures from the site you are peeking, nothing from the ad
+       * networks and CDNs it embeds. */
+      images: "any",
       skipNav: true,      // ignore menus, breadcrumbs and footers
       theme: "auto",      // "auto" | "dark" | "light"
       dwell: 320,

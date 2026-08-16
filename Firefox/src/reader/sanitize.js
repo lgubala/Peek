@@ -38,9 +38,21 @@
     return first;
   }
 
+  function sameSite(src, pageHost) {
+    if (!pageHost) return true;
+    try {
+      const host = new URL(src, "https://" + pageHost).hostname.replace(/^www\./, "");
+      return P.url.registrable(host) === P.url.registrable(pageHost);
+    } catch (_) { return false; }
+  }
+
   function sanitize(root, opts) {
     opts = opts || {};
-    const showImages = !!opts.images;
+    /* "off" | "same" | "any"; older callers pass a boolean. */
+    const mode = opts.images === true ? "any" : opts.images === false ? "off" : (opts.images || "any");
+    const showImages = mode !== "off";
+    const sameOnly = mode === "same";
+    const pageHost = opts.pageHost || "";
     const maxImages = opts.maxImages || P.config.MAX_IMAGES;
     const imgBase = opts.baseUrl || "";
     const linkBase = opts.linkBase || opts.baseUrl || "";
@@ -85,6 +97,11 @@
           if (!showImages || images >= maxImages || P.images.isDecorative(child)) {
             child.remove(); dropped++; child = next; continue;
           }
+          /* "same" keeps pictures from the site being peeked and drops the
+           * ones it embeds from ad networks and CDNs. */
+          if (sameOnly && !sameSite(child.getAttribute("src"), pageHost)) {
+            child.remove(); dropped++; child = next; continue;
+          }
         }
 
         /* Strip every attribute, then restore only what is allowed. */
@@ -122,5 +139,5 @@
     return { dropped, images };
   }
 
-  P.sanitize = { sanitize, safeUrl, unwrap };
+  P.sanitize = { sanitize, safeUrl, unwrap, sameSite };
 })(self.Peek = self.Peek || {});

@@ -1,0 +1,33 @@
+<!--
+  Peek — the mark, at source.
+
+  A peephole set in a door: a bright ring with a dark centre. The shipped PNGs
+  are NOT rendered from this file; docs/icon/make-icons.py redraws the mark at
+  each size, because at 16px the seam, the glint and the knob have to go. This
+  SVG is the 128px form, for anywhere a scalable version is wanted.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128"
+     role="img" aria-label="Peek">
+  <defs>
+    <linearGradient id="door" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#131A21"/>
+      <stop offset="1" stop-color="#0E141A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- the door -->
+  <rect x="0.9" y="0.9" width="126.2" height="126.2" rx="28"
+        fill="url(#door)" stroke="#3A5C64" stroke-width="1.8"/>
+
+  <!-- hinge side -->
+  <line x1="28.8" y1="23" x2="28.8" y2="105"
+        stroke="#2C3C48" stroke-width="2.6" stroke-linecap="round"/>
+
+  <!-- the peephole -->
+  <circle cx="76.8" cy="64" r="30" fill="#7FD8C4"/>
+  <circle cx="76.8" cy="64" r="15.6" fill="#0B1015"/>
+  <circle cx="56.1" cy="43.3" r="4.5" fill="#E8FFFA" opacity="0.8"/>
+
+  <!-- knob -->
+  <circle cx="44.2" cy="82" r="3.8" fill="#2C3C48"/>
+</svg>

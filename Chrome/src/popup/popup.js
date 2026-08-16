@@ -11,10 +11,10 @@
    * definition rather than two that promise to stay in step and do not. */
   const DEFAULTS = (self.Peek && self.Peek.config && self.Peek.config.DEFAULTS) || {
     enabled: true, autoPeek: true, images: true, skipNav: true,
-    theme: "auto", dwell: 320, userDisabled: []
+    theme: "auto", dwell: 320, userDisabled: [], images: "any"
   };
 
-  const TOGGLES = ["enabled", "autoPeek", "skipNav", "images"];
+  const TOGGLES = ["enabled", "autoPeek", "skipNav"];
 
   const $ = (id) => document.getElementById(id);
   const save = (patch) => api.storage.local.set(patch);
@@ -80,6 +80,52 @@
 
   /* --- theme ----------------------------------------------------------- */
 
+  const IMAGE_NOTE = {
+    off: "No images are requested at all. This is the one setting that " +
+         "meaningfully reduces what a fetched page can do \u2014 Peek never runs " +
+         "its JavaScript, but with images on, your browser still decodes bytes " +
+         "from that server.",
+    same: "Pictures from the site you are peeking, but not the ones it embeds " +
+          "from ad networks and CDNs.",
+    any: "Every image the page uses, including third-party ones."
+  };
+
+  function paintImages() {
+    for (const btn of $("images").querySelectorAll("button")) {
+      btn.setAttribute("aria-pressed", String(btn.dataset.images === state.images));
+    }
+    $("imagesNote").textContent = IMAGE_NOTE[state.images] || "";
+  }
+
+  const TRIGGER_NOTE = {
+    alt: "Nothing happens until you hold Alt \u2014 so Peek never fetches a page " +
+         "you only glanced past, and it works everywhere, including menus and " +
+         "sites it otherwise stays off.",
+    shift: "Nothing happens until you hold Shift. Same as Alt, but Shift never " +
+           "makes the browser\u2019s menu bar appear.",
+    ctrl: "Nothing happens until you hold Ctrl. Careful if you Ctrl-click links " +
+          "out of habit \u2014 that still opens them in a new tab.",
+    hover: "Ambient: resting on any link is enough. Peek then has to guess what " +
+           "you meant, so it skips navigation, stays off a few sites, and never " +
+           "fetches from webmail."
+  };
+
+  function paintTrigger() {
+    for (const btn of $("trigger").querySelectorAll("button")) {
+      btn.setAttribute("aria-pressed", String(btn.dataset.trigger === state.trigger));
+    }
+    $("triggerNote").textContent = TRIGGER_NOTE[state.trigger] || "";
+
+    /* With a modifier, holding the key says what you meant, so the guesses do
+     * not apply. Saying so is better than leaving a control that quietly does
+     * nothing. */
+    const guessing = state.trigger === "hover";
+    $("skipNavHint").textContent = guessing
+      ? "Menus, breadcrumbs and footers. You already know where \u201cHome\u201d goes, and the card would sit on top of the row you are reading."
+      : "Not needed while you hold a key to peek \u2014 holding it says you meant that link, menu or not.";
+    $("skipNav").closest(".row").style.opacity = guessing ? "1" : "0.55";
+  }
+
   function paintTheme() {
     for (const btn of $("theme").querySelectorAll("button")) {
       btn.setAttribute("aria-pressed", String(btn.dataset.theme === state.theme));
@@ -118,6 +164,25 @@
         paintBlockedList();
       });
 
+      /* images was a boolean before 1.15. */
+      if (typeof state.images === "boolean") state.images = state.images ? "any" : "off";
+
+      for (const btn of $("images").querySelectorAll("button")) {
+        btn.addEventListener("click", () => {
+          state.images = btn.dataset.images;
+          save({ images: state.images });
+          paintImages();
+        });
+      }
+
+      for (const btn of $("trigger").querySelectorAll("button")) {
+        btn.addEventListener("click", () => {
+          state.trigger = btn.dataset.trigger;
+          save({ trigger: state.trigger });
+          paintTrigger();
+        });
+      }
+
       for (const btn of $("theme").querySelectorAll("button")) {
         btn.addEventListener("click", () => {
           state.theme = btn.dataset.theme;
@@ -136,6 +201,8 @@
       });
 
       paintSite();
+      paintImages();
+      paintTrigger();
       paintTheme();
     })
     .catch((err) => console.error("[peek] popup could not start", err));

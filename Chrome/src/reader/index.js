@@ -35,7 +35,8 @@
       images: opts.images,
       maxImages,
       baseUrl: opts.baseUrl || "",
-      linkBase: opts.linkBase || ""
+      linkBase: opts.linkBase || "",
+      pageHost: opts.pageHost || ""
     });
     out.listing = maxImages > P.config.MAX_IMAGES;
     out.tidied = P.tidy.tidy(frag);
@@ -127,7 +128,7 @@
       out.lang = article.lang || "";
     }
 
-    return finish(frag, out, Object.assign({ baseUrl: url }, opts));
+    return finish(frag, out, Object.assign({ baseUrl: url, pageHost: P.url.hostOf(url) }, opts));
   }
 
   /* Clean a fragment a site handler fetched itself — a rendered README, say.

@@ -33,5 +33,14 @@
     return true;  // response is async
   });
 
+
+  /* Shown once, on install. Not on update: an existing user does not need to be
+   * told again, and reopening a tab under them on every release is rude. */
+  api.runtime.onInstalled.addListener((details) => {
+    if (details.reason !== "install") return;
+    api.tabs.create({ url: api.runtime.getURL("src/onboarding/onboarding.html") })
+      .catch(() => {});
+  });
+
   P.log.info("background ready \u2014 no requests until asked");
 })(self.Peek = self.Peek || {});

@@ -46,17 +46,31 @@
     <input type="checkbox" id="skipNav"><span class="sw"></span>
     <span class="txt">
       <span class="name">Ignore navigation links</span>
-      <span class="hint">Menus, breadcrumbs and footers. You already know where "Home" goes, and the card would sit on top of the row you are reading.</span>
+      <span class="hint" id="skipNavHint">Menus, breadcrumbs and footers. You already know where "Home" goes, and the card would sit on top of the row you are reading.</span>
     </span>
   </label>
 
-  <label class="row">
-    <input type="checkbox" id="images"><span class="sw"></span>
-    <span class="txt">
-      <span class="name">Show images</span>
-      <span class="hint">The page's lead photo, and images inside articles. These load from the origin site, which means extra requests to it.</span>
-    </span>
-  </label>
+</section>
+
+<section>
+  <div class="lbl">Images</div>
+  <div class="seg" id="images">
+    <button type="button" data-images="off">Off</button>
+    <button type="button" data-images="same">Same site</button>
+    <button type="button" data-images="any">Any</button>
+  </div>
+  <div class="sub" id="imagesNote"></div>
+</section>
+
+<section>
+  <div class="lbl">Show the card when I</div>
+  <div class="seg" id="trigger">
+    <button type="button" data-trigger="alt">Alt + hover</button>
+    <button type="button" data-trigger="shift">Shift + hover</button>
+    <button type="button" data-trigger="ctrl">Ctrl + hover</button>
+    <button type="button" data-trigger="hover">Just hover</button>
+  </div>
+  <div class="sub" id="triggerNote"></div>
 </section>
 
 <section>
@@ -71,7 +85,7 @@
 <section>
   <div class="lbl">Hover delay</div>
   <div class="slider">
-    <input type="range" id="dwell" min="120" max="900" step="20">
+    <input type="range" id="dwell" min="120" max="1500" step="20">
     <span class="val" id="dwellVal"></span>
   </div>
 </section>

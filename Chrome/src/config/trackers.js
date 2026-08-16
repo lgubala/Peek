@@ -193,5 +193,27 @@
     return { count: names.length, names, owners };
   }
 
-  P.trackers = { owner, isTracker, inPath, summarise, EXACT, FAMILIES, SCOPED, PATHS };
+  /* The same URL with the tracking taken out.
+   *
+   * Peek already knows which parameters are tracking and which are the page
+   * itself, so it can hand you a link worth pasting: no utm_, no fbclid, no
+   * campaign ids, but `?q=` and `?page=2` and the fragment left alone. Peek
+   * never rewrites a URL it fetches or opens — this is only for copying. */
+  function clean(rawUrl) {
+    let u;
+    try { u = new URL(rawUrl); } catch (_) { return rawUrl; }
+
+    const params = P.url.parseQuery(u.search);
+    const kept = params.filter(([k]) => owner(k, u.hostname) === null);
+
+    if (kept.length === params.length) return u.href;   // nothing to remove
+
+    const query = kept
+      .map(([k, v]) => encodeURIComponent(k) + (v === "" ? "" : "=" + encodeURIComponent(v)))
+      .join("&");
+
+    return u.origin + u.pathname + (query ? "?" + query : "") + (u.hash || "");
+  }
+
+  P.trackers = { owner, isTracker, inPath, summarise, clean, EXACT, FAMILIES, SCOPED, PATHS };
 })(self.Peek = self.Peek || {});

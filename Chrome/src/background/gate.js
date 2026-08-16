@@ -13,10 +13,10 @@
   /* Whole labels for the ambiguous words, substrings only for names that
    * cannot mean anything else. Otherwise xxxlutz.de, a furniture chain, is
    * refused as pornography. */
-  function blockedCategory(hostname) {
-    if (P.config.BLOCKED_SUBSTRINGS.test(hostname)) return true;
+  function notFetchedCategory(hostname) {
+    if (P.config.NOT_FETCHED_SUBSTRINGS.test(hostname)) return true;
     return String(hostname).toLowerCase().split(/[.-]/)
-      .some((label) => P.config.BLOCKED_LABELS.has(label));
+      .some((label) => P.config.NOT_FETCHED_LABELS.has(label));
   }
 
   /* An action is a route. Matching a verb anywhere in the path refuses
@@ -43,7 +43,7 @@
     if (P.policy.forHost(u.hostname) === "disabled") {
       return { ok: false, reason: "Peek is switched off for this site." };
     }
-    if (blockedCategory(u.hostname)) {
+    if (notFetchedCategory(u.hostname)) {
       return { ok: false, reason: "Peek will not fetch this category of site." };
     }
     if (looksLikeAction(u.pathname)) {
@@ -57,5 +57,5 @@
     return { ok: true, url: u.href };
   }
 
-  P.gate = { check, looksLikeAction, blockedCategory };
+  P.gate = { check, looksLikeAction, notFetchedCategory };
 })(self.Peek = self.Peek || {});

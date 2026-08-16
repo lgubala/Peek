@@ -179,6 +179,8 @@
   transition: opacity .11s ease-out, transform .11s ease-out;
 }
 .card.in { opacity: 1; transform: none; }
+.card:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+.card:focus:not(:focus-visible) { outline: none; }
 .card.wide { max-width: ${P.config.CARD_MAX_WIDTH + 40}px; }
 @media (prefers-reduced-motion: reduce) { .card { transition: none; transform: none; } }
 
@@ -330,6 +332,18 @@ ol.steps li::marker { color: var(--ink-faint); font-size: 10px; }
 }
 .foot .safe { color: var(--accent); }
 .foot .sent { color: var(--warn); }
+.actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.act {
+  font: inherit; font-size: 10.5px;
+  background: none; color: var(--ink-faint);
+  border: 1px solid transparent; border-radius: 5px;
+  padding: 2px 6px; cursor: pointer; white-space: nowrap;
+}
+.act:hover { color: var(--accent); border-color: var(--accent-br); }
+
+.card.pinned { border-color: var(--accent-br); }
+.card.pinned .foot { background: var(--accent-bg); }
+
 .openbtn {
   font: inherit; font-size: 10.5px; font-weight: 500;
   background: var(--accent-bg); color: var(--accent);

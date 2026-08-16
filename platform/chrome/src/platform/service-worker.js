@@ -71,3 +71,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 console.log("%c[peek]", "color:#7FD8C4", "service worker ready — no requests until asked");
+
+/* Shown once, on install. Not on update: an existing user does not need to be
+ * told again, and reopening a tab under them on every release is rude. */
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason !== "install") return;
+  chrome.tabs.create({ url: chrome.runtime.getURL("src/onboarding/onboarding.html") })
+    .catch(() => {});
+});

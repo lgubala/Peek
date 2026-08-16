@@ -111,6 +111,77 @@
     ];
   }
 
+  /* --- what you can do with what you are looking at --------------------- */
+
+  /* Plain text of whatever the card is showing, for copying. */
+  function textOf(data, result) {
+    const out = [];
+    const summary = result && result.ok ? result.summary : null;
+    const article = result && result.ok ? result.article : null;
+
+    if (summary && summary.heading) out.push(summary.heading);
+    if (summary && summary.ingredients && summary.ingredients.length) {
+      out.push(summary.ingredients.join("\n"));
+      if (summary.steps && summary.steps.length) {
+        out.push(summary.steps
+          .map((sp, i) => (sp.indexOf("\u00a7 ") === 0 ? "\n" + sp.slice(2) : (i + 1) + ". " + sp))
+          .join("\n"));
+      }
+    } else if (article && article.ok && article.nodes) {
+      const parts = [];
+      (function walk(nodes) {
+        for (const n of nodes || []) {
+          if (typeof n === "string") parts.push(n);
+          else if (n && n.c) { walk(n.c); if (/^(p|li|h[1-6]|blockquote|pre)$/.test(n.t)) parts.push("\n"); }
+        }
+      })(article.nodes);
+      out.push(parts.join(" ").replace(/[ \t]+/g, " ").replace(/\n /g, "\n").trim());
+    } else if (summary && summary.description) {
+      out.push(summary.description);
+    }
+
+    out.push(P.trackers.clean(data.lookUrl));
+    return out.filter(Boolean).join("\n\n");
+  }
+
+  /* navigator.clipboard needs a secure context; the fallback covers http
+   * pages and older engines. Either way this only runs from a click. */
+  function copy(text) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text);
+      }
+    } catch (_) { /* fall through */ }
+    return new Promise((resolve, reject) => {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.cssText = "position:fixed;top:-1000px;opacity:0";
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch (_) { ok = false; }
+      ta.remove();
+      ok ? resolve() : reject(new Error("copy failed"));
+    });
+  }
+
+  function actionButton(label, title, run) {
+    const btn = el("button", "act", label);
+    btn.title = title;
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const done = run(e);
+      if (done && done.then) {
+        const was = btn.textContent;
+        done.then(() => { btn.textContent = "Copied"; })
+            .catch(() => { btn.textContent = "Press Ctrl+C"; })
+            .then(() => setTimeout(() => { btn.textContent = was; }, 1400));
+      }
+    });
+    return btn;
+  }
+
   function flagRow(f) {
     const row = el("div", "flag " + (f.tone || "warn"));
     row.appendChild(el("span", "dot"));
@@ -223,8 +294,10 @@
   }
 
   function render(card, data, state, settings) {
+    const pinned = P.hover && P.hover.pinned;
     card.textContent = "";
     card.classList.remove("wide", "danger", "caution");
+    card.classList.toggle("pinned", !!pinned);
 
     const result = state && state !== "loading" ? state : null;
     const summary = result && result.ok ? result.summary : null;
@@ -307,7 +380,29 @@
       ? el("span", "sent", "Requested from your IP" + (result.cached ? " \u00b7 cached" : ""))
       : el("span", "safe", "No request sent"));
 
-    const right = el("span");
+    const right = el("span", "actions");
+
+    /* Copying the link is worth offering whether or not the fetch worked, and
+     * the clean version is the one people actually want to paste. */
+    const cleaned = P.trackers.clean(data.lookUrl);
+    const stripped = cleaned !== data.lookUrl;
+    right.appendChild(actionButton(
+      stripped ? "Copy clean link" : "Copy link",
+      stripped ? "Copies " + cleaned + "\n\nTracking parameters removed."
+               : "Copies the link",
+      () => copy(cleaned)));
+
+    if (result && result.ok) {
+      right.appendChild(actionButton("Copy text", "Copies what the card is showing",
+        () => copy(textOf(data, result))));
+    }
+
+    right.appendChild(actionButton(
+      pinned ? "Unpin" : "Pin",
+      pinned ? "Let the card close when you move away"
+             : "Keep the card open until you dismiss it",
+      () => { P.hover.setPinned(!pinned); return null; }));
+
     if (result && result.ok) {
       /* When a redirect was unwrapped, Open goes to the destination rather
        * than through the tracker. That is a feature, but it was invisible —
@@ -332,5 +427,5 @@
     card.appendChild(foot);
   }
 
-  P.card = { render, el, sameAsLink, originChip, help, originHelp, routeHelp, severity };
+  P.card = { render, el, sameAsLink, originChip, help, originHelp, routeHelp, severity, textOf, copy };
 })(self.Peek = self.Peek || {});
