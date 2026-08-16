@@ -51,6 +51,59 @@
     return { text: text.slice(0, cap), bytes: text.length, truncated: text.length > cap };
   }
 
+  /* Follows redirects by hand so the hops can be shown. `redirect: "follow"`
+   * hides them: you get the final URL and nothing about the route, and the
+   * route is often the interesting part — a link that visits a tracker in
+   * another country before arriving somewhere respectable. */
+  const MAX_HOPS = 6;
+
+  async function requestChain(url, headers) {
+    const chain = [url];
+    let current = url;
+
+    for (let hop = 0; hop < MAX_HOPS; hop++) {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), P.config.FETCH_TIMEOUT_MS);
+      let res;
+      try {
+        res = await fetch(current, Object.assign({}, BASE_INIT, {
+          redirect: "manual",
+          signal: ctrl.signal,
+          headers: Object.assign({ Accept: "text/html,application/xhtml+xml" }, headers || {})
+        }));
+      } catch (e) {
+        P.log.warn("fetch failed", current, e && e.name);
+        return { res: null, chain };
+      } finally {
+        clearTimeout(timer);
+      }
+
+      /* An opaque redirect tells us nothing and cannot be followed. Fall back
+       * to letting the browser do it, losing the chain but keeping the page. */
+      if (res.type === "opaqueredirect") {
+        const followed = await request(current, headers);
+        return { res: followed, chain };
+      }
+
+      const location = res.status >= 300 && res.status < 400 && res.headers.get("location");
+      if (!location) return { res, chain };
+
+      let next;
+      try { next = new URL(location, current).href; }
+      catch (_) { return { res, chain }; }
+
+      /* Every hop passes the gate. A redirect must not be a way in. */
+      const gated = P.gate.check(next);
+      if (!gated.ok) {
+        return { res: null, chain, blocked: gated.reason };
+      }
+
+      chain.push(next);
+      current = next;
+    }
+    return { res: null, chain, tooManyHops: true };
+  }
+
   /* Raw fetch with all the guarantees applied. Returns null on any failure. */
   async function request(url, headers, cap) {
     const ctrl = new AbortController();
@@ -86,5 +139,5 @@
   function acquire() { inFlight++; }
   function release() { inFlight = Math.max(0, inFlight - 1); }
 
-  P.fetcher = { request, fetchText, fetchJson, readCapped, slotsFree, acquire, release };
+  P.fetcher = { request, requestChain, fetchText, fetchJson, readCapped, slotsFree, acquire, release };
 })(self.Peek = self.Peek || {});

@@ -10,7 +10,7 @@ The web is a corridor of doors with nothing written on them. Peek puts a window
 in each one.
 
 <p align="center">
-  <img src="docs/screenshots/b.png" alt="The Peek at the apple pie" width="7200">
+  <img src="docs/icon/preview.png" alt="The Peek icon at 16, 32, 48, 96 and 128px, on a light and a dark toolbar" width="430">
 </p>
 
 <!-- docs/screenshots/ -->
@@ -44,7 +44,6 @@ The exception is trouble. If a link has an `@` before the domain, a punycode
 lookalike, or link text claiming one site while pointing at another, the
 warnings and the dissected URL jump to the top of the card.
 
-
 ## Install
 
 **Firefox** — `about:debugging#/runtime/this-firefox` → Load Temporary Add-on →
@@ -54,6 +53,35 @@ warnings and the dissected URL jump to the top of the card.
 `Chrome/` folder
 
 Both unload when the browser closes. Permanent installs need store signing.
+
+## When something is wrong
+
+Peek has already fetched the page, so it can ask what the page *is* rather than
+whether its URL appears on a list. That matters: phishing domains live hours,
+so any bundled feed is stale before it ships, and a live lookup would mean
+telling a server what you are about to open — the one thing Peek promises not
+to do.
+
+What it looks for:
+
+- **A page claiming a brand it is not served from.** A login page titled
+  "PayPal" on `paypal-secure.account-verify.xyz`. Never goes stale, needs no
+  feed.
+- **A form that posts elsewhere.** What you type going to a different site
+  than the one you are on.
+- **A password field somewhere odd** — a throwaway registry, a bare IP, a
+  punycode look-alike. A bare login page on an ordinary domain says nothing;
+  GitHub's looks exactly like that.
+- **An instant forward** to another host.
+- **The redirect route**, every hop of it.
+
+When any of it fires, the card takes a red or amber border, a drawn warning
+sign and a banner directly under the domain, so a bad link looks wrong across a
+page of results before you have read a word.
+
+These are observations, never verdicts. *"This page calls itself PayPal and is
+served from paypal-secure.xyz"* is a fact you can check. Peek is not antivirus
+and does not pretend to be — your browser's Safe Browsing already does that job.
 
 ## Email addresses
 

@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.9.0
+
+- **Peek judges the page, not a blocklist.** It has already downloaded the
+  page, so instead of asking whether a URL is on a feed that goes stale within
+  hours, it asks what the page says about itself:
+  - a page calling itself PayPal, Microsoft, Steam and so on while served from
+    a domain that brand does not own — the strongest phishing signal available
+    without any list, and it never expires
+  - a form that posts what you type to a different site entirely
+  - a password field on a throwaway registry, a bare IP, or a punycode domain
+  - a page that immediately forwards somewhere else
+- **The card looks wrong, not just reads wrong.** A red or amber border, a
+  drawn warning sign, and a banner directly under the domain. Ordinary cards
+  are untouched
+- **Redirects show every hop.** Peek follows them by hand rather than letting
+  the browser hide the route, so `t.co → tracker.de → destination` is visible.
+  Every hop passes the safety gate, so a redirect cannot be a way in
+- Tracking parameters: 50 to 240. Compiled from public vendor documentation
+  rather than a licensed catalogue — ClearURLs and AdGuard data is LGPL-3.0,
+  DuckDuckGo's is CC BY-NC-SA, and Brave's and Firefox's lists now ship through
+  a downloaded component and Remote Settings, so neither can be vendored from
+  source without a runtime fetch
+
 ## 1.8.0
 
 - **Removed the watchlist.** Highlighting user-supplied words inside a peeked

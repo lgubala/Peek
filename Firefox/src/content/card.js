@@ -196,9 +196,35 @@
 
   /* --- entry ----------------------------------------------------------- */
 
+  /* The loudest thing Peek can say. Sits above everything, changes the card
+   * itself, and states what was observed rather than passing a verdict. */
+  function alarm(card, level, flags) {
+    const box = el("div", "alarm " + level);
+    box.appendChild(el("span", "sign " + level));
+
+    const body = el("div", "body");
+    body.appendChild(el("span", "head",
+      level === "danger" ? "This does not add up" : "Worth a look first"));
+    flags.forEach((f) => body.appendChild(el("p", null, f.text)));
+    box.appendChild(body);
+
+    card.appendChild(box);
+    card.classList.add(level);
+  }
+
+  /* Link-level trouble and page-level trouble, ranked together. */
+  function severity(data, result) {
+    const linkWorst = data.flags.reduce(
+      (w, f) => (f.tone === "bad" ? "danger" : w || (f.tone === "warn" ? "caution" : w)), "");
+    const pageLevel = (result && result.signals && result.signals.level) || "";
+    if (linkWorst === "danger" || pageLevel === "danger") return "danger";
+    if (linkWorst === "caution" || pageLevel === "caution") return "caution";
+    return "";
+  }
+
   function render(card, data, state, settings) {
     card.textContent = "";
-    card.classList.remove("wide");
+    card.classList.remove("wide", "danger", "caution");
 
     const result = state && state !== "loading" ? state : null;
     const summary = result && result.ok ? result.summary : null;
@@ -228,15 +254,23 @@
     }
     card.appendChild(bar);
 
-    /* deceptive links win the top slot, with the URL to prove it */
-    if (data.flags.length) {
-      flagBlock(card, data.flags.slice(0, 3));
-      if (data.segments && data.segments.length) {
+    /* Trouble wins the top slot, with the URL to prove it. */
+    const pageFlags = (result && result.signals && result.signals.flags) || [];
+    const loud = pageFlags.filter((f) => f.tone === "bad" || f.tone === "warn");
+    const level = severity(data, result);
+
+    if (level) {
+      alarm(card, level, data.flags.slice(0, 3).concat(loud).slice(0, 4));
+      if (data.segments && data.segments.length && data.flags.length) {
         const url = el("div", "url");
         data.segments.forEach((s) => url.appendChild(el("span", "s-" + s.c, s.t)));
         card.appendChild(url);
       }
     }
+
+    /* The route a redirect took is informative rather than alarming. */
+    const route = pageFlags.filter((f) => f.tone === "info");
+    if (route.length) flagBlock(card, route);
 
     if (summary && summary.metrics && summary.metrics.length) {
       const m = el("div", "metrics");
@@ -288,5 +322,5 @@
     card.appendChild(foot);
   }
 
-  P.card = { render, el, sameAsLink, originChip, help, originHelp, routeHelp };
+  P.card = { render, el, sameAsLink, originChip, help, originHelp, routeHelp, severity };
 })(self.Peek = self.Peek || {});

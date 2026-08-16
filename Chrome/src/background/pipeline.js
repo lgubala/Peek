@@ -45,15 +45,25 @@
       const special = await P.siteHandlers.run(gate.url, opts, handlerContext());
       if (special) { P.cache.set(gate.url, opts, special); return special; }
 
-      const res = await P.fetcher.request(gate.url);
+      const hopped = await P.fetcher.requestChain(gate.url);
+      const res = hopped.res;
+      if (hopped.blocked) {
+        return { ok: false, blocked: true,
+          reason: "The link redirects to something Peek will not fetch: " + hopped.blocked };
+      }
+      if (hopped.tooManyHops) {
+        return { ok: false, reason: "Too many redirects to follow." };
+      }
       if (!res) return { ok: false, reason: "Could not reach the site." };
 
       const ctype = (res.headers.get("content-type") || "").toLowerCase();
+      const finalUrl = hopped.chain[hopped.chain.length - 1] || res.url || gate.url;
       const result = {
         ok: true,
         status: res.status,
-        finalUrl: res.url || gate.url,
-        redirected: !!res.url && res.url !== gate.url,
+        finalUrl,
+        chain: hopped.chain,
+        redirected: hopped.chain.length > 1,
         contentType: ctype.split(";")[0] || ""
       };
 
@@ -75,6 +85,20 @@
       result.truncated = truncated;
       result.summary = P.extract.extract(text);
       result.article = P.reader.read(text, result.finalUrl, { images: !!opts.images });
+
+      /* What the page says about itself, and the route it took. */
+      result.signals = { level: "", flags: [] };
+      try {
+        const doc = P.platform.parse(text);
+        const page = P.signals.inspect(doc, result.finalUrl);
+        const route = P.signals.describeChain(hopped.chain);
+        result.signals.flags = page.flags.concat(route.flags);
+        result.signals.level =
+          page.level === "danger" || route.level === "danger" ? "danger"
+          : (page.level || route.level) ? "caution" : "";
+      } catch (e) {
+        P.log.warn("signals failed", e && e.message);
+      }
 
       P.cache.set(gate.url, opts, result);
       return result;

@@ -32,6 +32,8 @@
   --accent-br:  #24544C;
 
   --warn:       #E9A94A;
+  --warn-bg:    #2A2115;
+  --warn-br:    #453320;
   --bad:        #F0768C;
   --bad-bg:     #2C1820;
   --bad-br:     #4A2531;
@@ -62,6 +64,8 @@
     --accent-br:  #A9DCD2;
 
     --warn:       #8F5C0C;
+    --warn-bg:    #FDF3E2;
+    --warn-br:    #EBD3A8;
     --bad:        #B02742;
     --bad-bg:     #FBE7EB;
     --bad-br:     #EFBDC7;
@@ -89,6 +93,8 @@
   --accent-bg:  #E1F3EF;
   --accent-br:  #A9DCD2;
   --warn:       #8F5C0C;
+  --warn-bg:    #FDF3E2;
+  --warn-br:    #EBD3A8;
   --bad:        #B02742;
   --bad-bg:     #FBE7EB;
   --bad-br:     #EFBDC7;
@@ -97,6 +103,63 @@
 }
 
 * { box-sizing: border-box; }
+
+/* ---------------------------------------------------------------------------
+   Alarm states. The card itself changes, not just a line of text inside it —
+   at a glance, across a page of results, the wrong one should look wrong
+   before you have read a word of it.
+   --------------------------------------------------------------------------- */
+.card.danger {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 1px var(--bad), var(--shadow);
+}
+.card.caution { border-color: var(--warn); }
+
+.alarm {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 10px 11px;
+  font-size: 12px; line-height: 1.45; font-weight: 500;
+}
+.alarm.danger { background: var(--bad-bg); color: var(--bad); border-bottom: 1px solid var(--bad-br); }
+.alarm.caution { background: var(--warn-bg); color: var(--warn); border-bottom: 1px solid var(--warn-br); }
+.alarm .body { padding: 0; }
+.alarm .head {
+  display: block; font-weight: 700; letter-spacing: .02em;
+  text-transform: uppercase; font-size: 10px; margin-bottom: 3px;
+}
+.alarm p { margin: 0 0 5px; }
+.alarm p:last-child { margin-bottom: 0; }
+
+/* A triangle for danger, a disc for caution. Drawn, so there is no font or
+   emoji to fail to render. */
+.sign { flex: none; width: 18px; height: 18px; position: relative; margin-top: 1px; }
+.sign::before {
+  content: ""; position: absolute; inset: 0;
+}
+.sign.danger::before {
+  border-left: 9px solid transparent;
+  border-right: 9px solid transparent;
+  border-bottom: 16px solid var(--bad);
+  width: 0; height: 0; inset: 1px auto auto 0;
+}
+.sign.caution::before {
+  border-radius: 50%; background: var(--warn);
+}
+.sign::after {
+  content: "!"; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: var(--bg);
+  padding-top: 4px;
+}
+.sign.caution::after { padding-top: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .card.danger { animation: pulse .5s ease-out 1; }
+  @keyframes pulse {
+    from { box-shadow: 0 0 0 5px transparent, var(--shadow); }
+    to   { box-shadow: 0 0 0 1px var(--bad), var(--shadow); }
+  }
+}
 
 .card {
   position: fixed;
