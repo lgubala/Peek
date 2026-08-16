@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Peek</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+
+<header>
+  <img class="mark" src="../../icons/icon-48.png" width="20" height="20" alt="">
+  <h1>Peek</h1>
+  <span class="ver" id="ver"></span>
+</header>
+
+<section id="siteSection">
+  <div class="lbl">This site</div>
+  <label class="row">
+    <input type="checkbox" id="siteOff"><span class="sw"></span>
+    <span class="txt">
+      <span class="name">Don’t use Peek on <span id="siteHost">this site</span></span>
+      <span class="hint">Switches Peek off here and on every subdomain. Applies immediately, no reload.</span>
+    </span>
+  </label>
+  <div class="sub" id="blockedList"></div>
+</section>
+
+<section>
+  <label class="row">
+    <input type="checkbox" id="enabled"><span class="sw"></span>
+    <span class="txt">
+      <span class="name">Peek enabled</span>
+      <span class="hint">Alt+Shift+P toggles this from any page.</span>
+    </span>
+  </label>
+
+  <label class="row">
+    <input type="checkbox" id="autoPeek"><span class="sw"></span>
+    <span class="txt">
+      <span class="name">Read pages on hover</span>
+      <span class="hint">Requests the page as soon as you rest on a link. Turn this off and Peek makes no requests at all — press L to read a page on demand.</span>
+    </span>
+  </label>
+
+  <label class="row">
+    <input type="checkbox" id="skipNav"><span class="sw"></span>
+    <span class="txt">
+      <span class="name">Ignore navigation links</span>
+      <span class="hint">Menus, breadcrumbs and footers. You already know where "Home" goes, and the card would sit on top of the row you are reading.</span>
+    </span>
+  </label>
+
+  <label class="row">
+    <input type="checkbox" id="images"><span class="sw"></span>
+    <span class="txt">
+      <span class="name">Show images</span>
+      <span class="hint">The page's lead photo, and images inside articles. These load from the origin site, which means extra requests to it.</span>
+    </span>
+  </label>
+</section>
+
+<section>
+  <div class="lbl">Appearance</div>
+  <div class="seg" id="theme">
+    <button data-theme="auto">Auto</button>
+    <button data-theme="light">Light</button>
+    <button data-theme="dark">Dark</button>
+  </div>
+</section>
+
+<section>
+  <div class="lbl">Hover delay</div>
+  <div class="slider">
+    <input type="range" id="dwell" min="120" max="900" step="20">
+    <span class="val" id="dwellVal"></span>
+  </div>
+</section>
+
+<div class="notice">
+  <b>Peek makes network requests.</b> When "read pages on hover" is on, resting on a link asks that site for its page. The site sees a request from your IP address and can log it.
+  <ul>
+    <li>No cookies are sent or stored, and no referrer is passed.</li>
+    <li>The site's JavaScript never runs, so its trackers do not fire.</li>
+    <li>Nothing is added to your browsing history.</li>
+    <li>Links that log out, unsubscribe, confirm, pay or carry one-time tokens are never fetched.</li>
+  </ul>
+</div>
+
+<!--SCRIPTS-->
+</body>
+</html>

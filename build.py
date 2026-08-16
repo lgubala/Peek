@@ -1,0 +1,288 @@
+#!/usr/bin/env python3
+"""
+Build Chrome/ and Firefox/ from the shared tree.
+
+    python3 build.py            build both
+    python3 build.py --check    build to a temp dir and diff; exit 1 on drift
+    python3 build.py firefox    build one
+
+Everything under src/ is shared. platform/<browser>/ is overlaid on top of it,
+and that overlay is the *only* place the two builds are allowed to differ:
+
+    platform/firefox/  MV2 background page, which has a DOM
+    platform/chrome/   MV3 worker plus an offscreen document, because MV3
+                       service workers have no DOM and Peek cannot parse HTML
+                       without one
+
+The script lists in both manifests, and the <script> tags in Chrome's offscreen
+document, are generated from build/modules.json. That is the whole point: a
+module can no longer be added to one browser and forgotten in the other.
+
+Chrome/ and Firefox/ are committed so they can be uploaded to the stores
+directly, and --check in CI proves they match the source they claim to be
+built from.
+"""
+
+import argparse
+import filecmp
+import json
+import os
+import shutil
+import sys
+import tempfile
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+MODULES = os.path.join(ROOT, "build", "modules.json")
+VERSION_FILE = os.path.join(ROOT, "build", "version.txt")
+
+BROWSERS = ("firefox", "chrome")
+ASSETS = ("vendor", "icons")
+
+# Files that live in src/ but are not modules: copied, never listed.
+STATIC = (".html", ".css", ".md")
+
+
+def load(path):
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def version():
+    with open(VERSION_FILE, encoding="utf-8") as fh:
+        return fh.read().strip()
+
+
+def resolve(entry):
+    """A module path in modules.json to a path inside the built package."""
+    if entry.startswith("@vendor/"):
+        return entry[1:]                       # vendor/readability.js
+    return "src/" + entry
+
+
+def copy_tree(src, dst):
+    for root, _dirs, files in os.walk(src):
+        rel = os.path.relpath(root, src)
+        target = os.path.join(dst, rel) if rel != "." else dst
+        os.makedirs(target, exist_ok=True)
+        for f in files:
+            shutil.copy2(os.path.join(root, f), os.path.join(target, f))
+
+
+# --------------------------------------------------------------------------
+# manifests
+# --------------------------------------------------------------------------
+
+DESCRIPTION = ("Read a link before you open it. Peek shows what is actually on "
+               "the other side, without opening the page.")
+HOMEPAGE = "https://github.com/lgubala/Peek"
+
+ICONS = {"16": "icons/icon-16.png", "32": "icons/icon-32.png",
+         "48": "icons/icon-48.png", "96": "icons/icon-96.png",
+         "128": "icons/icon-128.png"}
+TOOLBAR = {"16": "icons/icon-16.png", "32": "icons/icon-32.png",
+           "48": "icons/icon-48.png"}
+
+
+def firefox_manifest(mods, ver):
+    engine = [resolve(m) for m in mods["engine"]]
+    return {
+        "manifest_version": 2,
+        "name": "Peek",
+        "version": ver,
+        "description": DESCRIPTION,
+        "homepage_url": HOMEPAGE,
+        "browser_specific_settings": {
+            "gecko": {
+                "id": "peek@lgubala.dev",
+                "strict_min_version": "115.0",
+                "data_collection_permissions": {"required": ["none"]}
+            }
+        },
+        "icons": dict(ICONS),
+        "permissions": ["storage", "<all_urls>"],
+        "background": {
+            "scripts": engine + ["src/" + mods["entry"]["firefox_background"]],
+            "persistent": False
+        },
+        "content_scripts": [{
+            "matches": ["<all_urls>"],
+            "js": [resolve(m) for m in mods["content"]],
+            "run_at": "document_idle",
+            "all_frames": False
+        }],
+        "browser_action": {"default_title": "Peek",
+                           "default_popup": "src/popup/popup.html",
+                           "default_icon": dict(TOOLBAR)}
+    }
+
+
+def chrome_manifest(mods, ver):
+    icons = {k: v for k, v in ICONS.items() if k != "96"}   # Chrome uses 16/32/48/128
+    return {
+        "manifest_version": 3,
+        "name": "Peek",
+        "version": ver,
+        "description": DESCRIPTION,
+        "homepage_url": HOMEPAGE,
+        "minimum_chrome_version": "116",
+        "icons": icons,
+        "permissions": ["storage", "offscreen"],
+        "host_permissions": ["<all_urls>"],
+        "background": {"service_worker": "src/" + mods["entry"]["chrome_worker"]},
+        "content_scripts": [{
+            "matches": ["<all_urls>"],
+            "js": [resolve(m) for m in mods["content"]],
+            "run_at": "document_idle",
+            "all_frames": False
+        }],
+        "action": {"default_title": "Peek",
+                   "default_popup": "src/popup/popup.html",
+                   "default_icon": dict(TOOLBAR)}
+    }
+
+
+OFFSCREEN_TEMPLATE = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Peek engine</title>
+</head>
+<body>
+<!--
+  GENERATED by build.py from build/modules.json. Do not edit.
+
+  Chrome MV3 service workers have no DOM, and Peek cannot parse HTML without
+  one, so this invisible document hosts the engine. The scripts below are the
+  same files, in the same order, that Firefox loads in its background page.
+-->
+%s
+  <script src="../../src/%s"></script>
+</body>
+</html>
+"""
+
+
+def write_offscreen(out, mods):
+    tags = "\n".join('  <script src="../../%s"></script>' % resolve(m)
+                     for m in mods["engine"])
+    path = os.path.join(out, "src", "offscreen", "offscreen.html")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(OFFSCREEN_TEMPLATE % (tags, mods["entry"]["chrome_offscreen"]))
+
+
+def write_popup(out, mods):
+    """The popup loads config/rules.js so DEFAULTS has one definition."""
+    path = os.path.join(out, "src", "popup", "popup.html")
+    with open(path, encoding="utf-8") as fh:
+        html = fh.read()
+    tags = "\n".join('<script src="../%s"></script>' % m for m in mods["popup"])
+    marker = "<!--SCRIPTS-->"
+    if marker in html:
+        html = html.replace(marker, tags)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(html)
+
+
+# --------------------------------------------------------------------------
+
+def build(browser, out, mods, ver):
+    if os.path.isdir(out):
+        shutil.rmtree(out)
+    os.makedirs(out)
+
+    copy_tree(os.path.join(ROOT, "src"), os.path.join(out, "src"))
+    for asset in ASSETS:
+        copy_tree(os.path.join(ROOT, asset), os.path.join(out, asset))
+    copy_tree(os.path.join(ROOT, "platform", browser), out)
+
+    manifest = firefox_manifest(mods, ver) if browser == "firefox" else chrome_manifest(mods, ver)
+    with open(os.path.join(out, "manifest.json"), "w", encoding="utf-8") as fh:
+        json.dump(manifest, fh, indent=2)
+        fh.write("\n")
+
+    if browser == "chrome":
+        write_offscreen(out, mods)
+    write_popup(out, mods)
+
+    # Every listed module must exist, or it fails at runtime in that browser only.
+    missing = []
+    listed = set(resolve(m) for m in mods["content"] + mods["engine"])
+    if browser == "firefox":
+        listed.add("src/" + mods["entry"]["firefox_background"])
+    else:
+        listed.add("src/" + mods["entry"]["chrome_worker"])
+        listed.add("src/" + mods["entry"]["chrome_offscreen"])
+    for m in sorted(listed):
+        if not os.path.isfile(os.path.join(out, m)):
+            missing.append(m)
+    if missing:
+        raise SystemExit("%s: listed but not present:\n  %s" % (browser, "\n  ".join(missing)))
+
+    return len(listed)
+
+
+def check(browser, mods, ver):
+    tmp = tempfile.mkdtemp()
+    try:
+        fresh = os.path.join(tmp, browser)
+        build(browser, fresh, mods, ver)
+        committed = os.path.join(ROOT, browser.capitalize())
+        return diff(fresh, committed)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def diff(a, b):
+    problems = []
+
+    def walk(cmp_result, prefix=""):
+        for f in cmp_result.left_only:
+            problems.append("only in build: " + os.path.join(prefix, f))
+        for f in cmp_result.right_only:
+            problems.append("only in committed: " + os.path.join(prefix, f))
+        for f in cmp_result.diff_files:
+            problems.append("differs: " + os.path.join(prefix, f))
+        for name, sub in cmp_result.subdirs.items():
+            walk(sub, os.path.join(prefix, name))
+
+    walk(filecmp.dircmp(a, b))
+    return problems
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Build Peek for Chrome and Firefox.")
+    ap.add_argument("browsers", nargs="*", choices=list(BROWSERS),
+                    help="which to build (default: both)")
+    ap.add_argument("--check", action="store_true",
+                    help="verify the committed builds match the source")
+    args = ap.parse_args()
+
+    mods = load(MODULES)
+    ver = version()
+    targets = args.browsers or list(BROWSERS)
+
+    if args.check:
+        bad = False
+        for b in targets:
+            problems = check(b, mods, ver)
+            if problems:
+                bad = True
+                print("%s is out of date:" % b.capitalize())
+                for p in problems:
+                    print("  " + p)
+            else:
+                print("%s matches the source" % b.capitalize())
+        if bad:
+            print("\nrun: python3 build.py")
+        return 1 if bad else 0
+
+    for b in targets:
+        out = os.path.join(ROOT, b.capitalize())
+        n = build(b, out, mods, ver)
+        print("%-8s v%s  %d modules" % (b, ver, n))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

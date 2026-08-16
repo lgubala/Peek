@@ -4,7 +4,9 @@
 (function (P) {
   "use strict";
 
-  const DEBUG = true;
+  /* Quiet under the test runner, which sets PEEK_SILENT — the suite's own
+   * output is the signal, and 200 lines of "[peek] loaded on…" is not. */
+  const DEBUG = !(typeof process !== "undefined" && process.env && process.env.PEEK_SILENT);
 
   P.log = {
     debug: DEBUG,              // readable from the console when diagnosing

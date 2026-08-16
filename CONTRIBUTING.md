@@ -29,30 +29,60 @@ Ninety per cent of changes belong in one of two files.
 | Recognise a new URL shape with no request | `src/link/recognizers.js` |
 | Handle a site whose content is not in its HTML | `src/sites/` — see the README there |
 
-## Keeping the two builds in step
+## The build
 
-Everything except `manifest.json`, `src/platform/` and `src/offscreen/` is
-identical in both folders. When you change a shared file, copy it across:
-
-```sh
-rsync -a --exclude 'platform' --exclude 'offscreen' Firefox/src/ Chrome/src/
-```
-
-Adding a *new* shared file also means adding it to the script list in **both**
-manifests. If the engine needs it, do **not** hand-edit
-`Chrome/src/offscreen/offscreen.html` — generate it:
+There is one source tree. `Chrome/` and `Firefox/` are **generated** — never
+edit them.
 
 ```sh
-python3 docs/sync-offscreen.py           # rewrite offscreen.html, report drift
-python3 docs/sync-offscreen.py --check   # report only, exit 1 on drift
+npm run build     # regenerate both
+npm run check     # verify the committed builds match the source
+npm run verify    # syntax + check + tests, the same as CI
 ```
 
-Chrome's offscreen document lists the engine in HTML rather than in the
-manifest, so it drifts silently from the Firefox background scripts. When it
-does, the missing module fails **only in Chrome and only at runtime** — every
-link stops working with something like `P.policy.forHost is not a function`,
-and nothing catches it before a user does. Run `--check` before you tag a
-release.
+`build.py` copies `src/`, overlays `platform/<browser>/`, and generates both
+manifests and Chrome's `offscreen.html` from `build/modules.json`.
+
+### Adding a module
+
+Put the file in `src/`, then add it to `build/modules.json` — to `content`,
+`engine`, or both — and run `npm run build`. That is the whole procedure.
+
+The load order lives in one file for a reason. It used to live in three:
+Firefox's manifest, Chrome's manifest, and Chrome's `offscreen.html`. Twice a
+module was added to some and not others, and both times the result was the same
+— every link failing, **only in Chrome, only at runtime**, with
+`P.policy.forHost is not a function`. Neither was caught before a user found
+it. `tests/cases/build-integrity.js` now asserts the three agree.
+
+The builds are committed so they can be uploaded to the stores without a build
+step, and `npm run check` in CI proves they are what the source says.
+
+## Tests
+
+```sh
+npm test                    # everything
+node tests/run.js gate      # one suite
+node tests/run.js -v        # verbose
+```
+
+Cases live in `tests/cases/`, one file per area, exporting named functions.
+They run against `src/` and `platform/`, using the module order from
+`build/modules.json`, so a green suite says the *source* is right rather than
+that the last build was.
+
+Two habits worth keeping:
+
+**Test the layer you mean to test.** The sanitizer test originally asserted
+against the finished node tree, and passed even with the sanitizer bug
+deliberately reintroduced — because `serialize.js` independently drops unknown
+tags. Defence in depth is good; a test that cannot tell which layer is doing
+the work is not.
+
+**Test the quiet direction too.** Half of Peek's rules are about *not* firing.
+Every list of things that must be flagged has a matching list of ordinary pages
+that must stay silent, because a false positive is the failure that makes
+people ignore the true ones.
 
 ## Two constraints that are easy to trip over
 

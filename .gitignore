@@ -8,3 +8,4 @@ Thumbs.db
 web-ext-artifacts/
 .vscode/
 .idea/
+.build/

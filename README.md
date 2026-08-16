@@ -192,33 +192,46 @@ So: *"the site's JavaScript never runs"* is a statement of fact you can check.
 ## Layout
 
 ```
-Chrome/            complete, installable copy — MV3
-Firefox/           complete, installable copy — MV2
-docs/screenshots/
+src/                 the only place you edit
+  config/rules.js    timings, caps, junk patterns, safety rules
+  config/sites.js    per-site: disabled, selectors, paywall notes
+  config/trackers.js tracking parameters, families and who owns them
+  common/            log, text, URL parsing, per-site policy
+  link/              what the link alone reveals, before any request
+  extract/           JSON-LD and OpenGraph -> facts
+  reader/            Readability -> sanitize -> tidy -> node tree
+  sites/             handlers for sites whose content is not in the HTML
+  background/        gate, fetcher, cache, pipeline
+  content/           hover, card, settings
+  popup/             settings and the disclosure notice
+
+platform/
+  firefox/           MV2 background page, which has a DOM
+  chrome/            MV3 worker plus an offscreen document, because MV3
+                     service workers have no DOM
+
+build/modules.json   the load order, defined once
+build.py             generates Chrome/ and Firefox/
+tests/               runs against src/, never against a build
+
+Chrome/  Firefox/    GENERATED. Committed so they can be uploaded to the
+                     stores directly; never edited by hand.
 ```
 
-Inside each browser folder:
+## Working on it
 
-```
-manifest.json
-vendor/readability.js        Mozilla Readability 0.6.0 (Apache-2.0)
-src/
-  config/rules.js            timings, caps, junk patterns, safety rules
-  config/sites.js            per-site: disabled, selectors, paywall notes
-  config/trackers.js         tracking parameters, families and who owns them
-  common/                    log, text, URL parsing
-  link/                      stage 0: what the link alone reveals
-  extract/                   JSON-LD and OpenGraph -> facts
-  reader/                    Readability -> sanitize -> tidy
-  sites/                     handlers for sites whose content is not in the HTML
-  background/                gate, fetcher, cache, pipeline
-  platform/                  the only browser-specific code
-  content/                   hover, card, settings
-  popup/                     settings and the disclosure notice
+```sh
+npm install          # jsdom, for the tests
+npm run build        # regenerate Chrome/ and Firefox/
+npm test             # 50 cases, 284 assertions
+npm run verify       # syntax + builds up to date + tests
 ```
 
-Everything except `manifest.json`, `platform/` and `offscreen/` is identical in
-both folders.
+Edit `src/`, run `npm run build`, reload the extension. Everything except
+`platform/` is shared, and the script lists in both manifests and in Chrome's
+offscreen document are generated from `build/modules.json` — so a module can no
+longer be added to one browser and forgotten in the other, which is how Peek's
+two worst runtime bugs happened.
 
 ## How a lookup works
 

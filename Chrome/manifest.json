@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Peek",
-  "version": "1.11.0",
+  "version": "1.12.0",
   "description": "Read a link before you open it. Peek shows what is actually on the other side, without opening the page.",
   "homepage_url": "https://github.com/lgubala/Peek",
   "minimum_chrome_version": "116",

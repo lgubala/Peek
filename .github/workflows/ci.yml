@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - run: npm ci
+
+      # Every source file must at least parse, in every context.
+      - name: Syntax
+        run: npm run syntax
+
+      # Chrome/ and Firefox/ are committed so they can be uploaded to the
+      # stores directly. This proves they are what the source says they are —
+      # a stale build is how a module ends up missing in one browser only.
+      - name: Builds are up to date
+        run: npm run check
+
+      - name: Tests
+        run: npm test
+
+  lint-extension:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # The store linter catches things our own tests cannot: manifest schema,
+      # deprecated APIs, and the innerHTML warnings AMO reports.
+      - name: web-ext lint (Firefox)
+        run: npx --yes web-ext lint --source-dir Firefox --warnings-as-errors=false
