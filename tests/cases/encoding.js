@@ -2,12 +2,11 @@
  * serve windows-1250 and windows-1251 — sme.sk, the worked example in Peek's
  * own README, is one. Decoding those as UTF-8 gives mojibake, which a user
  * reads as the site being broken rather than the extension. */
-const { loadModules } = require("../harness");
+const { loadUnit } = require("../harness");
 
-const MODULES = [
-  "common/log.js", "config/rules.js", "config/sites.js", "config/trackers.js",
-  "platform/dom.js", "common/text.js", "common/url.js", "common/policy.js",
-  "background/gate.js", "background/fetcher.js"
+const EXTRA = [
+  "background/gate.js",
+  "background/fetcher.js"
 ];
 
 /* A response whose body arrives as one chunk of bytes. */
@@ -58,28 +57,28 @@ function page(titleBytes, prefix) {
 
 module.exports = {
   "charset from the Content-Type header"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const body = page(encode("Čítajú", WIN1250));
     return P.fetcher.readCapped(response(body, "text/html; charset=windows-1250"))
       .then((r) => t.match(r.text, /Čítajú/, "windows-1250 declared in the header"));
   },
 
   "charset from a meta tag when the header is silent"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const body = page(encode("Čítajú", WIN1250), '<meta charset="windows-1250">');
     return P.fetcher.readCapped(response(body, "text/html"))
       .then((r) => t.match(r.text, /Čítajú/, "windows-1250 declared in a meta tag"));
   },
 
   "Cyrillic in windows-1251"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const body = page(cyrillic("Новости"));
     return P.fetcher.readCapped(response(body, "text/html; charset=windows-1251"))
       .then((r) => t.match(r.text, /Новости/, "windows-1251"));
   },
 
   "UTF-8 is untouched, declared or not"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const body = page(Buffer.from("Čítajú najnovšie správy", "utf8"));
     return Promise.all([
       P.fetcher.readCapped(response(body, "text/html; charset=utf-8")),
@@ -91,7 +90,7 @@ module.exports = {
   },
 
   "an unknown charset label does not lose the body"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const body = page(Buffer.from("hello", "utf8"));
     return P.fetcher.readCapped(response(body, "text/html; charset=x-not-real"))
       .then((r) => t.match(r.text, /hello/, "recovered from a bogus label"));

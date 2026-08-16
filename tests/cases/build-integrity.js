@@ -4,11 +4,20 @@
  * module present in one list and missing from another. */
 const fs = require("fs");
 const path = require("path");
-const { MODULES, ROOT, resolve } = require("../harness");
+const { MODULES, CORE, ROOT, resolve } = require("../harness");
 
 const read = (p) => JSON.parse(fs.readFileSync(path.join(ROOT, p), "utf8"));
 
 module.exports = {
+  "the tests' core list is a real subset of the engine"(t) {
+    /* tests/harness.js keeps its own short list of modules every unit test
+     * loads. If it drifts from the engine, tests pass against a combination
+     * no browser ever runs. */
+    for (const m of CORE) {
+      t.ok(MODULES.engine.includes(m), "CORE has " + m + ", which the engine does not load");
+    }
+  },
+
   "every listed module exists in the source tree"(t) {
     for (const group of ["content", "engine"]) {
       for (const m of MODULES[group]) {

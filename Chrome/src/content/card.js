@@ -361,7 +361,14 @@
     } else if (result && !result.ok) {
       flagBlock(card, [{ tone: result.blocked ? "warn" : "bad", text: result.reason || "Could not read this page." }]);
     } else if (state === "loading") {
-      card.appendChild(el("div", "note", "Reading the page\u2026"));
+      /* Reserve the space the content will need. Peek shows the identity bar
+       * instantly and fills the body when the fetch lands — which is right,
+       * but the card was growing and repositioning under the pointer at that
+       * moment, and the jump is the part that feels broken. */
+      const wait = el("div", "loading");
+      wait.appendChild(el("div", "note", "Reading the page\u2026"));
+      for (let i = 0; i < 3; i++) wait.appendChild(el("div", "skel"));
+      card.appendChild(wait);
     } else if (data.disabled) {
       card.appendChild(el("div", "note", "Peek is switched off for this site."));
     } else if (data.pageNoFetch) {

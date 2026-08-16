@@ -1,20 +1,22 @@
 /* The security boundary. Whatever leaves the sanitizer is rebuilt into the
  * card, so nothing that can execute may survive — and every node must be
  * inspected, including children hoisted out of an element that was unwrapped. */
-const { loadModules } = require("../harness");
+const { loadUnit } = require("../harness");
 
-const MODULES = [
-  "common/log.js", "config/rules.js", "config/sites.js", "config/trackers.js",
-  "platform/dom.js", "common/text.js", "common/url.js", "link/tld.js",
-  "reader/images.js", "reader/sanitize.js", "reader/tidy.js",
-  "reader/serialize.js", "reader/signals.js", "reader/index.js"
+const EXTRA = [
+  "reader/images.js",
+  "reader/sanitize.js",
+  "reader/tidy.js",
+  "reader/serialize.js",
+  "reader/signals.js",
+  "reader/index.js"
 ];
 
 const filler = (n) => "<p>" + "Enough ordinary prose to clear the reader threshold. ".repeat(n) + "</p>";
 
 module.exports = {
   "scripts and frames never survive"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const r = P.reader.clean(
       "<article><script>alert(1)</script><iframe src='https://evil/'></iframe>" +
       "<p onclick='steal()' style='color:red'>text</p>" + filler(8) + "</article>",
@@ -25,7 +27,7 @@ module.exports = {
   },
 
   "children hoisted from an unwrapped element are still checked"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     /* Asserted against the sanitizer's own output, not the finished node tree.
      * serialize.js drops unknown tags too, so testing through clean() passes
      * whether or not the sanitizer did its job — which it did, silently, when
@@ -41,7 +43,7 @@ module.exports = {
   },
 
   "the node tree is a second line of defence"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     /* Even if the sanitizer let something through, nothing off the allowlist
      * can reach the card, because serialize.js rebuilds from a fixed set. */
     const r = P.reader.clean(
@@ -51,7 +53,7 @@ module.exports = {
   },
 
   "javascript: and relative URLs are dropped"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const r = P.reader.clean(
       "<article><a href='javascript:alert(1)'>x</a>" +
       "<a href='/relative'>y</a><a href='https://ok.example/z'>z</a>" + filler(8) + "</article>",
@@ -62,7 +64,7 @@ module.exports = {
   },
 
   "relative URLs resolve when a base is given"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const r = P.reader.clean(
       "<article><img src='docs/shot.png' width='30%' alt='s'>" + filler(8) + "</article>",
       { images: true, maxImages: 1, baseUrl: "https://raw.example.com/u/r/main/" });
@@ -71,7 +73,7 @@ module.exports = {
   },
 
   "width='30%' is not a 30-pixel icon"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const doc = P.platform.parse("<img src='https://x/a.png' width='30%'>");
     t.equal(P.images.widthHint(doc.querySelector("img")), 0,
       "a percentage width says nothing about real size");
@@ -82,7 +84,7 @@ module.exports = {
   },
 
   "menus are refused as articles"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const nav = "<ul>" + ["Home", "News", "Sport", "Culture", "Contact", "About"]
       .map((x) => `<li><a href="https://s.example/${x}">${x}</a></li>`).join("") + "</ul>";
     const r = P.reader.clean("<div>" + nav + nav + "</div>", { images: true });

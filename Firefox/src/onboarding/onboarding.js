@@ -25,6 +25,14 @@
     }
   }).catch(() => {});
 
+  /* Browsers do not run content scripts on extension pages, by design — so the
+   * card could never appear on this one. Promising a demo here and delivering
+   * nothing reads as "the extension is broken" on the very first screen, which
+   * is the worst possible first impression. Open a real page instead. */
+  document.getElementById("demo").addEventListener("click", () => {
+    api.tabs.create({ url: "https://en.wikipedia.org/wiki/Peephole" }).catch(() => {});
+  });
+
   document.getElementById("settings").addEventListener("click", () => {
     /* openPopup is not available everywhere; the button should still do
      * something useful rather than nothing. */

@@ -2,13 +2,15 @@
  * interface, so they are worth asserting rather than eyeballing. */
 const fs = require("fs");
 const path = require("path");
-const { loadEngine, loadModules, fakeBrowser, ROOT } = require("../harness");
+const { loadEngine, loadUnit, fakeBrowser, ROOT } = require("../harness");
 
-const MODULES = [
-  "common/log.js", "config/rules.js", "config/sites.js", "config/trackers.js",
-  "platform/dom.js", "common/text.js", "common/url.js", "link/tld.js",
-  "reader/images.js", "reader/sanitize.js", "reader/tidy.js",
-  "reader/serialize.js", "reader/signals.js", "reader/index.js"
+const EXTRA = [
+  "reader/images.js",
+  "reader/sanitize.js",
+  "reader/tidy.js",
+  "reader/serialize.js",
+  "reader/signals.js",
+  "reader/index.js"
 ];
 
 const article = "<p>" + "Ordinary prose, at some length, to clear the threshold. ".repeat(8) + "</p>";
@@ -48,13 +50,13 @@ module.exports = {
   },
 
   "images: off requests nothing"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const r = P.reader.clean(PAGE, { images: "off", maxImages: 4, pageHost: "www.sme.sk" });
     t.equal(srcsOf(r).length, 0, "no image should survive");
   },
 
   "images: same keeps the site's own and drops third parties"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const r = P.reader.clean(PAGE, { images: "same", maxImages: 4, pageHost: "www.sme.sk" });
     const srcs = srcsOf(r);
     t.equal(srcs.length, 1, "exactly one image should survive: " + JSON.stringify(srcs));
@@ -62,13 +64,13 @@ module.exports = {
   },
 
   "images: any keeps both"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     const r = P.reader.clean(PAGE, { images: "any", maxImages: 4, pageHost: "www.sme.sk" });
     t.equal(srcsOf(r).length, 2, "both images should survive");
   },
 
   "the old boolean setting still means something"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     t.equal(srcsOf(P.reader.clean(PAGE, { images: true, maxImages: 4, pageHost: "www.sme.sk" })).length,
       2, "images: true behaves like 'any' for anyone upgrading");
     t.equal(srcsOf(P.reader.clean(PAGE, { images: false, maxImages: 4, pageHost: "www.sme.sk" })).length,

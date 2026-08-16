@@ -89,6 +89,31 @@ function loadContent(opts) {
   return { P: evaluate(files, w), window: w, dom, document: w.document };
 }
 
+/* The modules almost every unit test needs before it can load anything else:
+ * config, the DOM shim, and the small shared helpers. Defined here so that a
+ * new config module does not mean editing ten hardcoded lists — which is what
+ * happened when reader tuning moved out of rules.js, and 26 tests failed for
+ * a reason that had nothing to do with what they were testing.
+ *
+ * tests/cases/build-integrity.js asserts this stays a subset of the engine. */
+const CORE = [
+  "common/log.js",
+  "config/rules.js",
+  "config/reader.js",
+  "config/sites.js",
+  "config/trackers.js",
+  "platform/dom.js",
+  "common/text.js",
+  "common/url.js",
+  "common/policy.js",
+  "link/tld.js"
+];
+
+/* CORE plus whatever the test actually exercises. */
+function loadUnit(extra, opts) {
+  return loadModules(CORE.concat(extra || []), opts);
+}
+
 /* Only the modules a test names, for unit work. */
 function loadModules(names, opts) {
   opts = opts || {};
@@ -176,4 +201,5 @@ class Check {
   }
 }
 
-module.exports = { loadEngine, loadContent, loadModules, fakeBrowser, Check, MODULES, ROOT, resolve };
+module.exports = { loadEngine, loadContent, loadModules, loadUnit, fakeBrowser,
+                   Check, MODULES, CORE, ROOT, resolve };

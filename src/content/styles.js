@@ -300,6 +300,23 @@ ol.steps li::marker { color: var(--ink-faint); font-size: 10px; }
 .rbody table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 9px; }
 .rbody th, .rbody td { border: 1px solid var(--border-chip); padding: 3px 5px; text-align: left; }
 
+/* A body of roughly the height the real content will take, so the card does
+   not grow and reposition under the pointer when the fetch lands. */
+.loading { min-height: 92px; padding-bottom: 4px; }
+.skel {
+  height: 9px; margin: 8px 11px; border-radius: 3px;
+  background: var(--border);
+  opacity: .55;
+}
+.skel:nth-child(2) { width: 88%; }
+.skel:nth-child(3) { width: 74%; }
+.skel:nth-child(4) { width: 45%; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .skel { animation: breathe 1.4s ease-in-out infinite; }
+  @keyframes breathe { 0%, 100% { opacity: .35; } 50% { opacity: .7; } }
+}
+
 .note { padding: 9px 11px 0; font-size: 11.5px; color: var(--ink-dim); line-height: 1.45; }
 
 .flags { padding: 9px 11px 0; display: flex; flex-direction: column; gap: 5px; }

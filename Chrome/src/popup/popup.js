@@ -191,6 +191,9 @@
         });
       }
 
+      /* One definition of the range, rather than a number in the markup that
+       * quietly disagrees with the one in config. */
+      $("dwell").max = (self.Peek && self.Peek.config && self.Peek.config.DWELL_MAX_MS) || 1500;
       $("dwell").value = state.dwell;
       $("dwellVal").textContent = state.dwell + " ms";
       $("dwell").addEventListener("input", (e) => { $("dwellVal").textContent = e.target.value + " ms"; });

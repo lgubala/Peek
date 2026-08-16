@@ -112,9 +112,13 @@
       out.via = "readability";
 
       if (!article || !article.content) {
-        out.reason = bodyText.length < 400
-          ? "Nothing readable in the HTML."
-          : "No article structure \u2014 this looks like a listing or an app, not a page to read.";
+        /* Truncation is the likeliest cause of a broken tree on a big page,
+         * and blaming the site for it is both wrong and unhelpful. */
+        out.reason = opts.truncated
+          ? "The page was too large to read in full, so its structure came out incomplete."
+          : bodyText.length < 400
+            ? "Nothing readable in the HTML."
+            : "No article structure \u2014 this looks like a listing or an app, not a page to read.";
         return out;
       }
 

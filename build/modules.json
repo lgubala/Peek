@@ -37,6 +37,7 @@
   "engine": [
     "common/log.js",
     "config/rules.js",
+    "config/reader.js",
     "config/sites.js",
     "config/trackers.js",
     "platform/dom.js",

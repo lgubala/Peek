@@ -56,8 +56,10 @@
   }
 
   async function readCapped(res, cap) {
-    cap = cap || P.config.BYTE_CAP;
     const ctype = res.headers && res.headers.get ? res.headers.get("content-type") : "";
+    /* HTML gets the larger budget; a JSON API answering in megabytes is not
+     * answering the question the card asked. */
+    cap = cap || (/html/i.test(ctype || "") ? P.config.BYTE_CAP : P.config.BYTE_CAP_OTHER);
 
     /* Stream so the connection closes as soon as we have enough. */
     if (res.body && res.body.getReader) {

@@ -4,11 +4,9 @@
  * matched action words anywhere in the path and refused seven of eight
  * ordinary news articles, which a user reads as the extension being broken.
  */
-const { loadModules, Check } = require("../harness");
+const { loadUnit, Check } = require("../harness");
 
-const MODULES = [
-  "common/log.js", "config/rules.js", "config/sites.js", "config/trackers.js",
-  "platform/dom.js", "common/text.js", "common/url.js", "common/policy.js",
+const EXTRA = [
   "background/gate.js"
 ];
 
@@ -53,7 +51,7 @@ const ADULT = ["https://www.pornhub.com/", "https://porn.example.com/", "https:/
 
 module.exports = {
   "ordinary pages are fetchable"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     for (const url of ALLOWED) {
       const g = P.gate.check(url);
       t.ok(g.ok, "refused an ordinary page: " + url + (g.ok ? "" : "\n      " + g.reason));
@@ -61,14 +59,14 @@ module.exports = {
   },
 
   "action links are refused"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     for (const url of REFUSED) {
       t.ok(!P.gate.check(url).ok, "let through an action link: " + url);
     }
   },
 
   "category matching respects word boundaries"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     for (const url of NOT_ADULT) {
       t.ok(P.gate.check(url).ok, "refused an ordinary business: " + url);
     }
@@ -78,7 +76,7 @@ module.exports = {
   },
 
   "action words must be whole path segments"(t) {
-    const { P } = loadModules(MODULES);
+    const { P } = loadUnit(EXTRA);
     t.ok(!P.gate.check("https://x.com/logout").ok, "/logout should be refused");
     t.ok(P.gate.check("https://x.com/logout-explained-for-beginners").ok,
       "a slug containing 'logout' should be fine");

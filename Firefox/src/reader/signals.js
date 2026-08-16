@@ -35,6 +35,15 @@
 
   /* The brand a page announces itself as, from the places a page announces
    * itself: <title>, og:site_name, og:title, the first heading. */
+  /* The brand used as an identity rather than a noun: "Apple ID",
+   * "Amazon account", "sign in to Steam". */
+  function qualifiedUse(text, brand) {
+    return new RegExp(
+      "(" + brand + "\\s+(id|account|login|sign[\\s-]?in|wallet|billing|support)" +
+      "|(log|sign)[\\s-]?in\\s+to\\s+" + brand +
+      "|your\\s+" + brand + "\\s+(account|id))", "i").test(text);
+  }
+
   function claimedBrand(doc) {
     const parts = [
       (doc.querySelector("title") || {}).textContent,
@@ -49,9 +58,25 @@
       /* Whole word, so "apple" does not match "applesauce" and "ups" does not
        * match "groups". */
       const re = new RegExp("(^|[^a-z0-9])" + brand + "([^a-z0-9]|$)", "i");
-      if (re.test(parts)) return { brand, where: parts.slice(0, 120) };
+      if (re.test(parts)) {
+        return { brand, where: parts.slice(0, 120), qualified: qualifiedUse(parts, brand) };
+      }
     }
     return null;
+  }
+
+  /* Is this page asking for a secret? Either it has somewhere to type one, or
+   * it is written like a sign-in page. */
+  function credentialContext(doc, form) {
+    if (form.password) return "password";
+
+    const said = [
+      (doc.querySelector("title") || {}).textContent,
+      (doc.querySelector("h1") || {}).textContent,
+      (doc.querySelector('meta[property="og:title"]') || { getAttribute: () => "" }).getAttribute("content")
+    ].map(squash).filter(Boolean).join(" | ");
+
+    return CREDENTIAL_HINT.test(said) ? "wording" : null;
   }
 
   function credentialForm(doc) {
@@ -99,7 +124,19 @@
     };
 
     /* --- the page claims to be someone it is not --------------------- */
-    if (claim && !ownedBy(host, claim.brand)) {
+    /* A brand name on a page is not impersonation. "My Perfect Apple Pie" is
+     * a recipe; Peek called it a fake Apple site, which is worse than saying
+     * nothing — one warning like that and nobody believes the real ones.
+     *
+     * Impersonation is a brand name *plus somewhere to type a secret*. So the
+     * check only runs when the page is asking for credentials at all, and the
+     * brands that are also ordinary words need the strongest form of that. */
+    const credentials = credentialContext(doc, form);
+    const ambiguous = claim && P.config.AMBIGUOUS_BRANDS.has(claim.brand);
+    const enough = credentials &&
+      (!ambiguous || credentials === "password" || claim.qualified);
+
+    if (claim && enough && !ownedBy(host, claim.brand)) {
       const proper = (P.config.BRAND_DOMAINS[claim.brand] || [])[0] || claim.brand;
       const name = claim.brand.charAt(0).toUpperCase() + claim.brand.slice(1);
 
@@ -181,5 +218,6 @@
     return { level, flags, hosts };
   }
 
-  P.signals = { inspect, describeChain, claimedBrand, credentialForm, metaRefresh, ownedBy };
+  P.signals = { inspect, describeChain, claimedBrand, credentialForm, credentialContext,
+                metaRefresh, ownedBy };
 })(self.Peek = self.Peek || {});

@@ -1,5 +1,44 @@
 # Changelog
 
+## 1.20.0
+
+Two reported bugs, and the performance work.
+
+- **Fixed: "My Perfect Apple Pie" was flagged as a fake Apple site.** The
+  impersonation check fired on a brand name appearing anywhere in a title, so
+  apple pie, the Amazon rainforest, steam cleaning and chasing a bus were all
+  suspicious. A brand name is not impersonation — impersonation is a brand name
+  **plus somewhere to type a secret**. The check now runs only when the page is
+  asking for credentials at all, and brands that are also ordinary words
+  (`apple`, `amazon`, `steam`, `chase`, `wise`, `meta`, `ups`…) need an actual
+  password field or the brand used as an account, like "Apple ID". One warning
+  like that costs more trust than ten real ones earn
+- **Fixed: the first-run page's "try it" link did nothing.** Browsers do not
+  run content scripts on extension pages, so the card could never appear there
+  — a demo that fails on the very first screen reads as a broken extension. It
+  now opens a real page in a new tab and says why
+- **Large pages are read in full.** The 640 KB cap truncated ordinary news
+  pages, and a truncated document is a broken tree, so Peek reported "no
+  article structure" and the user read that as "Peek does not work here". HTML
+  now gets 2 MB; everything else keeps 640 KB. When truncation does happen, the
+  card says so instead of blaming the site
+- **The card no longer jumps when content arrives.** It reserves the space the
+  body will need while fetching, rather than growing and repositioning under
+  the pointer at the moment the fetch lands
+- **Reader tuning moved to `config/reader.js`**, out of the bundle parsed in
+  every tab: 24 settings that the card never touches
+
+### On the rest of the performance review
+
+Measured before optimising, and the numbers did not justify the bigger
+changes. The content bundle compiles in **0.14 ms** and executes in **0.85 ms**
+— not the 5–15 ms estimated — and per-tab heap was too small to measure
+reliably. So lazy-loading the analysis layer behind `scripting.executeScript`
+is not worth its complexity, and neither is deferring the stylesheet or
+building the lookup tables on first use. The `config/reader.js` split was worth
+doing because it also makes the tunables findable, which is what that file
+promised.
+
 ## 1.19.0
 
 - **Stack Exchange**: whether a question is answered, its score, answer count

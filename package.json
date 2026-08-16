@@ -1,6 +1,6 @@
 {
   "name": "peek",
-  "version": "1.19.0",
+  "version": "1.20.0",
   "description": "Read a link before you open it. A Firefox and Chrome extension.",
   "private": true,
   "license": "MIT",

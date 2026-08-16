@@ -44,8 +44,15 @@ kbd {
   padding: 1px 7px;
 }
 
-.demo { color: var(--ink-dim); font-size: 14px; }
-.demo a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-br); }
+.demo { color: var(--ink-dim); font-size: 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.demo .why { font-size: 12.5px; color: var(--ink-faint); flex: 1 1 220px; }
+button.ghost {
+  font: inherit; font-size: 14px;
+  background: none; color: var(--accent);
+  border: 1px solid var(--accent-br); border-radius: 7px;
+  padding: 6px 13px; cursor: pointer; white-space: nowrap;
+}
+button.ghost:hover { background: var(--accent-bg); }
 
 .know { border-color: var(--warn-br); background: var(--warn-bg); }
 .know h2 { color: var(--warn); }

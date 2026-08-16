@@ -95,8 +95,10 @@
       const { text, bytes, truncated } = await P.fetcher.readCapped(res);
       result.bytes = bytes;
       result.truncated = truncated;
+      result.bytes = bytes;
       result.summary = P.extract.extract(text);
-      result.article = P.reader.read(text, result.finalUrl, { images: !!opts.images });
+      result.article = P.reader.read(text, result.finalUrl,
+        { images: opts.images, truncated: truncated });
 
       /* What the page says about itself, and the route it took. */
       result.signals = { level: "", flags: [] };
