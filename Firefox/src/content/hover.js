@@ -43,8 +43,6 @@
 
     card = document.createElement("div");
     card.className = "card";
-    /* Critical layout inline, so a blocked stylesheet degrades to ugly
-     * rather than invisible. */
     /* Critical layout inline, so a stylesheet blocked by a strict page CSP
      * degrades to ugly rather than invisible. Colours go through var() with a
      * literal fallback: when the sheet loaded the theme wins, and when it did

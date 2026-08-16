@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.10.0
+
+Nothing new; what was already there, done properly.
+
+- **Tracking parameters became a module, `config/trackers.js`.** Three kinds of
+  rule instead of one flat list of names:
+  - **families** — `/^utm[_-]/`, `/^pk_/`, `/^mtm_/`, `/^hsa_/`. One rule
+    replaces fifty entries and catches parameters nobody has catalogued yet:
+    `utm_brand_new_thing` is recognised without an update
+  - **site-scoped names** — `?ref=` means referrer tracking on Amazon and
+    "reference" on half the web. Attributing every `?ref=` to Amazon was
+    confidently wrong, which is the one thing a hint must never be
+  - **path tracking** — Amazon and eBay bake it into the path, not the query
+- **Parameters are attributed to whoever is being told.** "4 tracking tags ·
+  Google, Meta" instead of four opaque strings
+- `__peek.trackers(url)` in the console explains what Peek makes of any query
+- Removed `text.stripTags`, which was written, exported and never called, and a
+  duplicated comment block in `hover.js` left by an earlier patch
+
 ## 1.9.0
 
 - **Peek judges the page, not a blocklist.** It has already downloaded the

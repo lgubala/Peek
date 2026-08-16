@@ -16,10 +16,6 @@
     } catch (_) { return str; }
   }
 
-  function stripTags(s) {
-    return squash(String(s || "").replace(/<[^>]+>/g, " "));
-  }
-
   /* ISO 8601 duration -> "1 h 30 min" */
   function duration(iso) {
     if (typeof iso !== "string") return "";
@@ -59,5 +55,5 @@
     return SUFFIXED[cur] ? pretty + " " + sym : sym + pretty;
   }
 
-  P.text = { squash, decodeEntities, stripTags, duration, seconds, money };
+  P.text = { squash, decodeEntities, duration, seconds, money };
 })(self.Peek = self.Peek || {});

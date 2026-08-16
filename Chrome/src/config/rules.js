@@ -65,70 +65,9 @@
       "continue", "return", "returnurl", "imgurl", "uddg"
     ],
 
-    /* Tracking parameters, compiled from public vendor documentation rather
-     * than copied from a licensed catalogue — ClearURLs and AdGuard rule data
-     * is LGPL-3.0, DuckDuckGo's is CC BY-NC-SA, and Brave's and Firefox's live
-     * in a downloaded component and Remote Settings respectively, so neither
-     * can be vendored from source. Parameter names are facts; this list is
-     * ours to maintain.
-     *
-     * Peek only *shows* these, it does not strip them. Nothing breaks if one
-     * is wrong, so the bar for adding is low. */
-    TRACKING_PARAMS: new Set([
-      /* Google Analytics and Ads */
-      "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
-      "utm_id", "utm_name", "utm_reader", "utm_brand", "utm_social",
-      "utm_social-type", "utm_pubreferrer", "utm_swu", "utm_viz_id",
-      "gclid", "gclsrc", "dclid", "gbraid", "wbraid", "gad_source", "gad",
-      "gadid", "gcl_au", "_ga", "_gl", "_gac", "gclid_source",
-      "ei", "ved", "usg", "sa", "cad", "uact", "sca_esv", "sca_upv", "oq",
-      "sourceid", "sxsrf", "aqs", "rlz", "gs_lcp", "gs_lcrp", "iflsig",
-      /* Meta */
-      "fbclid", "fb_action_ids", "fb_action_types", "fb_source", "fb_ref",
-      "fbadid", "fbaid", "__cft__", "__tn__", "__xts__", "refsrc", "refid",
-      /* Microsoft, LinkedIn */
-      "msclkid", "mc_cid", "mc_eid", "li_fat_id", "trk", "trkcampaign",
-      "originalsubdomain", "midtoken", "midsig", "eid", "otptoken",
-      /* TikTok, Twitter/X, Instagram, Pinterest, Snap, Reddit */
-      "ttclid", "tt_medium", "tt_content", "twclid", "s_kwcid",
-      "__twitter_impression", "ref_src", "ref_url", "igshid", "igsh", "img_index",
-      "epik", "sender_ferry", "scid", "share_id", "rdt_cid", "correlation_id",
-      "share_source", "%24deep_link", "_branch_match_id",
-      /* Yandex, VK, Mail.ru, Baidu */
-      "yclid", "ysclid", "_openstat", "utm_referrer", "from", "wprid",
-      "vk_ref", "mt_click_id", "bd_vid", "hmsr", "hmpl", "hmcu", "hmkw", "hmci",
-      /* Marketing platforms */
-      "mkt_tok", "_hsenc", "_hsmi", "hsctatracking", "hsa_acc", "hsa_cam",
-      "hsa_grp", "hsa_ad", "hsa_src", "hsa_tgt", "hsa_kw", "hsa_mt", "hsa_net",
-      "hsa_ver", "vero_id", "vero_conv", "oly_anon_id", "oly_enc_id",
-      "wickedid", "wickedsource", "wickedpicked", "mkwid", "pcrid", "pkw",
-      "pmt", "pdv", "cvosrc", "cvo_campaign", "cjevent", "cjdata",
-      "irclickid", "irgwc", "sscid", "clickid", "click_id", "affiliate_id",
-      "aff_id", "aff_sub", "partner_id", "campaign_id", "adgroupid",
-      "creative", "matchtype", "network", "placement", "targetid", "device",
-      /* Email and newsletter senders */
-      "mc_tc", "mkt_unsubscribe", "ml_subscriber", "ml_subscriber_hash",
-      "ck_subscriber_id", "sc_campaign", "sc_channel", "sc_content",
-      "sc_medium", "sc_outcome", "sc_geo", "sc_country", "elqtrackid",
-      "elqtrack", "assetid", "recipientid", "customerid", "trk_contact",
-      "trk_msg", "trk_module", "trk_sid",
-      /* Shops and marketplaces */
-      "srsltid", "spm", "scm", "pvid", "algo_pvid", "algo_expid", "btsid",
-      "ws_ab_test", "aff_platform", "aff_trace_key", "terminal_id",
-      "ref_", "psc", "smid", "pf_rd_i", "pf_rd_m", "pf_rd_p", "pf_rd_r",
-      "pf_rd_s", "pf_rd_t", "pd_rd_i", "pd_rd_r", "pd_rd_w", "pd_rd_wg",
-      "th", "ascsubtag", "asc_campaign", "asc_refurl", "asc_source",
-      /* Content sites and CDNs */
-      "guccounter", "guce_referrer", "guce_referrer_sig", "icid", "cmpid",
-      "ncid", "cid", "sr_share", "taid", "at_medium", "at_campaign",
-      "at_custom1", "at_custom2", "at_custom3", "at_custom4",
-      "itm_source", "itm_medium", "itm_campaign", "itm_content", "itm_term",
-      "cmp", "CMP", "smtyp", "smid", "ito", "xtor", "wtmc", "wt_mc",
-      "wt_zmc", "s_cid", "ss_source", "ss_campaign_id",
-      /* Analytics and session tools */
-      "_bta_tid", "_bta_c", "vgo_ee", "ceneo_spo", "gs_l", "hash",
-      "__s", "__hsfp", "__hssc", "__hstc", "_kx", "sb_referer_host"
-    ]),
+    /* Tracking parameters live in config/trackers.js, which knows families
+     * and owners as well as names. */
+
 
     SEARCH_KEYS: new Set(["q", "query", "s", "search", "k", "term", "keyword", "p", "wd", "text"]),
 

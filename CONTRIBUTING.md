@@ -20,7 +20,8 @@ Ninety per cent of changes belong in one of two files.
 |---|---|
 | Change timing, caps, thresholds | `src/config/rules.js` |
 | Add a junk phrase the reader should strip | `src/config/rules.js` → `JUNK_TEXT` |
-| Add a tracking parameter or a shortener | `src/config/rules.js` |
+| Add a tracking parameter | `src/config/trackers.js` — prefer a family rule over a name |
+| Add a shortener | `src/config/rules.js` |
 | Stop Peek working on a site | `src/config/sites.js` → `DISABLED_HOSTS` |
 | Fix a site where the wrong element is extracted | `src/config/sites.js` → `CONTENT_SELECTORS` |
 | Warn about a paywall | `src/config/sites.js` → `SITE_NOTES` |
@@ -71,6 +72,16 @@ Use `Peek.url.parseQuery(url.search)` instead. Nothing in `src/` may iterate
 tag to `ALLOWED_TAGS` or an attribute to `ALLOWED_ATTRS` means asserting it
 cannot execute anything. Think twice before adding `style`, `svg` or any `on*`
 attribute — the answer is no.
+
+## Exports that look unused
+
+Most modules export more than the rest of the code calls: `P.images.widthHint`,
+`P.signals.claimedBrand`, `P.trackers.EXACT` and so on. That is deliberate.
+Each is the smallest thing you can call to check one decision in isolation,
+either from `__peek` in the console or from a test harness. A grep for "who
+calls this" will say nobody; the answer is "whoever is debugging it".
+
+If you remove one, remove the reason it existed too.
 
 ## Style
 

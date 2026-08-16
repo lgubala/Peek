@@ -23,6 +23,8 @@
     store.set(key(url, opts), { t: Date.now(), value });
   }
 
+  /* Nothing calls this today. It stays because a cache with no way to empty it
+   * is a debugging dead end, and it is one line. */
   function clear() { store.clear(); }
 
   P.cache = { get, set, clear, get size() { return store.size; } };

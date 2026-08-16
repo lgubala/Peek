@@ -205,6 +205,7 @@ vendor/readability.js        Mozilla Readability 0.6.0 (Apache-2.0)
 src/
   config/rules.js            timings, caps, junk patterns, safety rules
   config/sites.js            per-site: disabled, selectors, paywall notes
+  config/trackers.js         tracking parameters, families and who owns them
   common/                    log, text, URL parsing
   link/                      stage 0: what the link alone reveals
   extract/                   JSON-LD and OpenGraph -> facts

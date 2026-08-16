@@ -27,6 +27,21 @@
     self.__peek = {
       get settings() { return Object.assign({}, P.settings.values); },
       set: (k, v) => P.settings.set(k, v),
+      /* What does Peek make of this URL's query? __peek.trackers(url) */
+      trackers(url) {
+        try {
+          const u = new URL(url || location.href);
+          const params = P.url.parseQuery(u.search);
+          const summary = P.trackers.summarise(params, u.hostname, u.pathname);
+          return {
+            url: u.href,
+            count: summary.count,
+            owners: summary.owners,
+            params: params.map(([k]) => ({ name: k, owner: P.trackers.owner(k, u.hostname) }))
+          };
+        } catch (e) { return "not a URL: " + (e && e.message); }
+      },
+
       /* Why was this link skipped? __peek.why("nav a") on any page. */
       why(sel) {
         const a = document.querySelector(sel || "a[href]");

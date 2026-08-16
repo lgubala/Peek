@@ -113,7 +113,7 @@
       });
     }
     params.forEach(([k, v], i) => {
-      const dead = C().TRACKING_PARAMS.has(k.toLowerCase());
+      const dead = P.trackers.isTracker(k, u.hostname);
       segs.push({ t: i === 0 ? "?" : "&", c: "dim" });
       segs.push({ t: k, c: dead ? "dead" : "key" });
       segs.push({ t: "=", c: dead ? "dead" : "dim" });
@@ -301,16 +301,19 @@
       if (h.length < 50 && !/^:~:/.test(h)) out.facts.push({ label: "Jumps to", value: h });
     }
 
-    const trackers = params.map((p) => p[0]).filter((k) => C().TRACKING_PARAMS.has(k.toLowerCase()));
-    if (trackers.length) {
+    /* Naming who is being told beats listing opaque parameter names:
+     * "4 tracking tags \u00b7 Google, Meta" says something you can act on. */
+    const tracking = P.trackers.summarise(params, host, u.pathname);
+    if (tracking.count) {
       out.facts.push({
         label: "Tracking tags",
-        value: trackers.length + " (" + trackers.slice(0, 3).join(", ") + (trackers.length > 3 ? "\u2026" : "") + ")"
+        value: tracking.count + (tracking.owners.length ? " \u00b7 " + tracking.owners.slice(0, 3).join(", ") : "")
       });
     }
 
     out.segments = dissect(u, reg, sub, params);
-    out.trackerCount = trackers.length;
+    out.trackerCount = tracking.count;
+    out.trackerOwners = tracking.owners;
     out.lookable = (u.protocol === "https:" || u.protocol === "http:") && !C().FILE_TYPES[ext] && !out.disabled;
 
     if (!out.subtitle && linkText && linkText.length < 140) out.subtitle = linkText;
