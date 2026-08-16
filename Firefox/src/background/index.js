@@ -10,7 +10,15 @@
   P.policy.load(api);
 
   api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (!msg || msg.type !== "peek:look") return false;
+    if (!msg) return false;
+    if (sender && sender.id && sender.id !== api.runtime.id) return false;
+
+    /* The pointer moved on. Stop asking the site. */
+    if (msg.type === "peek:cancel") {
+      P.pipeline.cancel(msg.id);
+      return false;
+    }
+    if (msg.type !== "peek:look") return false;
     /* Not exploitable today — there is no externally_connectable — but a
      * message handler that does not check its sender is one line from being a
      * problem the day one is added. */

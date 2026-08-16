@@ -93,7 +93,7 @@
    * another country before arriving somewhere respectable. */
   const MAX_HOPS = 6;
 
-  async function requestChain(url, headers) {
+  async function requestChain(url, headers, signal) {
     const chain = [url];
     let current = url;
 
@@ -105,26 +105,26 @@
       const left = deadline - Date.now();
       if (left <= 0) return { res: null, chain, timedOut: true };
 
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), Math.min(P.config.FETCH_TIMEOUT_MS, left));
+      const attempt = P.inflight.withTimeout(signal, Math.min(P.config.FETCH_TIMEOUT_MS, left));
       let res;
       try {
         res = await fetch(current, Object.assign({}, BASE_INIT, {
           redirect: "manual",
-          signal: ctrl.signal,
+          signal: attempt.signal,
           headers: Object.assign({ Accept: "text/html,application/xhtml+xml" }, headers || {})
         }));
       } catch (e) {
+        if (signal && signal.aborted) return { res: null, chain, cancelled: true };
         P.log.warn("fetch failed", current, e && e.name);
         return { res: null, chain };
       } finally {
-        clearTimeout(timer);
+        attempt.done();
       }
 
       /* An opaque redirect tells us nothing and cannot be followed. Fall back
        * to letting the browser do it, losing the chain but keeping the page. */
       if (res.type === "opaqueredirect") {
-        const followed = await request(current, headers);
+        const followed = await request(current, headers, signal);
         return { res: followed, chain };
       }
 
@@ -148,32 +148,30 @@
   }
 
   /* Raw fetch with all the guarantees applied. Returns null on any failure. */
-  async function request(url, headers) {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), P.config.FETCH_TIMEOUT_MS);
+  async function request(url, headers, signal) {
+    const attempt = P.inflight.withTimeout(signal, P.config.FETCH_TIMEOUT_MS);
     try {
-      const res = await fetch(url, Object.assign({}, BASE_INIT, {
-        signal: ctrl.signal,
+      return await fetch(url, Object.assign({}, BASE_INIT, {
+        signal: attempt.signal,
         headers: Object.assign({ Accept: "text/html,application/xhtml+xml" }, headers || {})
       }));
-      return res;
     } catch (e) {
-      P.log.warn("fetch failed", url, e && e.name);
+      if (!(signal && signal.aborted)) P.log.warn("fetch failed", url, e && e.name);
       return null;
     } finally {
-      clearTimeout(timer);
+      attempt.done();
     }
   }
 
-  async function fetchText(url, headers, cap) {
-    const res = await request(url, headers, cap);
+  async function fetchText(url, headers, cap, signal) {
+    const res = await request(url, headers, signal);
     if (!res || !res.ok) return null;
     const { text, bytes, truncated } = await readCapped(res, cap);
     return { text, bytes, truncated, status: res.status, url: res.url || url };
   }
 
-  async function fetchJson(url, headers) {
-    const res = await request(url, headers);
+  async function fetchJson(url, headers, signal) {
+    const res = await request(url, headers, signal);
     if (!res || !res.ok) return null;
     try { return await res.json(); } catch (_) { return null; }
   }

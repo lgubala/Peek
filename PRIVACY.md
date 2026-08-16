@@ -25,6 +25,7 @@ Nothing is sent to the author or to anyone else.
 - **No history.** A fetch is not a navigation. Nothing enters your browsing
   history or your back button.
 - **No disk.** Responses are held in memory for five minutes, then dropped by a sweep that runs every minute.
+- **Abandoned requests are aborted.** Move the pointer on and Peek stops asking. Whether the server notices depends on how much it had already sent, but Peek does not keep pulling a page you have walked away from.
 
 ## What is never fetched
 

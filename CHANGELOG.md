@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.13.0
+
+- **Abandoned lookups are called off.** Moving the pointer on used to leave the
+  fetch running — the answer was discarded, but the request had already been
+  made. Running down a page of results told ten sites you looked when you
+  looked at one. For an extension whose entire disclosure is "the site sees a
+  request from your IP", that was the wrong default. The content script now
+  cancels when you move to another link or dismiss the card, and the background
+  aborts the fetch
+- **A third simultaneous hover no longer shows an error.** "Too many lookups at
+  once. Try again." made a transient internal limit the user's problem, for
+  something they had already stopped caring about. The oldest in-flight lookup
+  is dropped to make room and the newest always wins
+- Site handlers get a signal bound into their fetch helpers, so a handler
+  cannot forget to pass it and keep fetching after the user has gone
+
 ## 1.12.0 — one source tree, tests, CI
 
 No behaviour changes. This is the structural work the review called for.

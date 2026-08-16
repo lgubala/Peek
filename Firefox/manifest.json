@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Peek",
-  "version": "1.12.0",
+  "version": "1.13.0",
   "description": "Read a link before you open it. Peek shows what is actually on the other side, without opening the page.",
   "homepage_url": "https://github.com/lgubala/Peek",
   "browser_specific_settings": {
@@ -49,6 +49,7 @@
       "src/reader/index.js",
       "src/sites/index.js",
       "src/sites/github.js",
+      "src/background/inflight.js",
       "src/background/gate.js",
       "src/background/cache.js",
       "src/background/fetcher.js",

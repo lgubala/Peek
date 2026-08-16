@@ -8,11 +8,13 @@
 (function (P) {
   "use strict";
 
-  /* What a site handler is allowed to do. Deliberately small. */
-  function handlerContext() {
+  /* What a site handler is allowed to do. Deliberately small. The signal is
+   * bound here so a handler cannot forget to pass it and keep fetching after
+   * the user has moved on. */
+  function handlerContext(signal) {
     return {
-      fetchText: (url, headers) => P.fetcher.fetchText(url, headers),
-      fetchJson: (url, headers) => P.fetcher.fetchJson(url, headers),
+      fetchText: (url, headers) => P.fetcher.fetchText(url, headers, null, signal),
+      fetchJson: (url, headers) => P.fetcher.fetchJson(url, headers, signal),
       clean: (html, opts) => P.reader.clean(html, opts || {}),
       extract: (html, opts) => P.extract.extract(html, opts || {})
     };
@@ -35,18 +37,25 @@
     const cached = P.cache.get(gate.url, opts);
     if (cached) return Object.assign({ cached: true }, cached);
 
-    if (!P.fetcher.slotsFree()) {
-      return { ok: false, reason: "Too many lookups at once. Try again." };
+    /* A third hover does not mean "refuse"; it means the first two are
+     * abandoned. Telling the user "too many lookups at once, try again" made a
+     * transient internal limit their problem, for something they had already
+     * stopped caring about. */
+    while (!P.fetcher.slotsFree()) {
+      if (!P.inflight.cancelOldest()) break;
     }
     P.fetcher.acquire();
 
+    const signal = opts.id != null ? P.inflight.open(opts.id) : null;
+
     try {
       /* A handler knows where the content actually lives. */
-      const special = await P.siteHandlers.run(gate.url, opts, handlerContext());
+      const special = await P.siteHandlers.run(gate.url, opts, handlerContext(signal));
       if (special) { P.cache.set(gate.url, opts, special); return special; }
 
-      const hopped = await P.fetcher.requestChain(gate.url);
+      const hopped = await P.fetcher.requestChain(gate.url, null, signal);
       const res = hopped.res;
+      if (hopped.cancelled) return { ok: false, cancelled: true, reason: "Cancelled." };
       if (hopped.blocked) {
         return { ok: false, blocked: true,
           reason: "The link redirects to something Peek will not fetch: " + hopped.blocked };
@@ -107,12 +116,16 @@
       return result;
 
     } catch (e) {
+      if (P.inflight.aborted(e) || (signal && signal.aborted)) {
+        return { ok: false, cancelled: true, reason: "Cancelled." };
+      }
       P.log.warn("lookup failed", e && e.message);
       return { ok: false, reason: "Could not read this page." };
     } finally {
+      if (opts.id != null) P.inflight.close(opts.id);
       P.fetcher.release();
     }
   }
 
-  P.pipeline = { look };
+  P.pipeline = { look, cancel: (id) => P.inflight.cancel(id) };
 })(self.Peek = self.Peek || {});

@@ -40,8 +40,17 @@ function ensureOffscreen() {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || msg.type !== "peek:look") return false;
+  if (!msg) return false;
   if (sender && sender.id && sender.id !== chrome.runtime.id) return false;
+
+  /* Cancellation is fire-and-forget: nothing waits for an answer. */
+  if (msg.type === "peek:cancel") {
+    ensureOffscreen()
+      .then(() => chrome.runtime.sendMessage({ type: "peek:offscreen:cancel", id: msg.id }))
+      .catch(() => {});
+    return false;
+  }
+  if (msg.type !== "peek:look") return false;
 
   (async () => {
     try {

@@ -15,6 +15,12 @@
   let dwellTimer = null, hideTimer = null;
   let currentAnchor = null, pendingAnchor = null;
   let currentData = null, state = null;
+
+  /* Each lookup carries an id so it can be called off. Moving on used to leave
+   * the fetch running: the answer was discarded, but the site had already been
+   * asked. Hovering down a page of results told ten sites you looked when you
+   * looked at one. */
+  let requestSeq = 0, requestId = null;
   let host = null, root = null, card = null;
 
   /* --- shadow host ----------------------------------------------------- */
@@ -142,12 +148,26 @@
     orphaned = true;
   }
 
+  /* Fire-and-forget: there is nothing useful to do if it fails. */
+  function abandon() {
+    if (requestId === null) return;
+    const id = requestId;
+    requestId = null;
+    if (!bridgeAlive()) return;
+    try {
+      const p = api.runtime.sendMessage({ type: "peek:cancel", id });
+      if (p && p.catch) p.catch(() => {});
+    } catch (_) { /* the bridge went away */ }
+  }
+
   function lookup() {
     if (state || orphaned) return;
     if (!bridgeAlive()) { announceOrphan(); return; }
 
     state = "loading";
     const anchor = currentAnchor, data = currentData;
+    const id = ++requestSeq;
+    requestId = id;
     draw();
     P.log.info("peeking", data.lookUrl);
 
@@ -155,6 +175,7 @@
     try {
       pending = api.runtime.sendMessage({
         type: "peek:look",
+        id,
         url: data.lookUrl,
         images: P.settings.values.images
       });
@@ -166,10 +187,13 @@
     }
 
     Promise.resolve(pending).then((res) => {
+      if (id === requestId) requestId = null;
       if (currentAnchor !== anchor) return;   // the pointer moved on
+      if (res && res.cancelled) return;       // we called it off ourselves
       state = res || { ok: false, reason: "No answer from the background script." };
       draw();
     }).catch((err) => {
+      if (id === requestId) requestId = null;
       if (isInvalidated(err)) { announceOrphan(); return; }
       if (currentAnchor !== anchor) return;
       state = { ok: false, reason: String((err && err.message) || err) };
@@ -187,6 +211,7 @@
 
   function show(anchor, opts) {
     if (orphaned || silencedHere()) return;
+    abandon();                                 // whatever we were fetching, we are not now
     /* Also checked in eligible(), but guarded here so nothing can route
      * around it. `force` is how __peek.probe() looks at a nav link anyway. */
     if (P.settings.values.skipNav && !(opts && opts.force) && P.nav.isNavLink(anchor)) return;
@@ -211,6 +236,7 @@
   }
 
   function hide() {
+    abandon();
     if (!card) return;
     card.classList.remove("in");
     card.style.display = "none";
@@ -325,7 +351,8 @@
   }
 
   P.hover = {
-    attach, show, hide, lookup, applyTheme, silencedHere,
+    attach, show, hide, lookup, applyTheme, silencedHere, abandon,
+    get requestId() { return requestId; },
     get orphaned() { return orphaned; },
     get data() { return currentData; },
     get state() { return state; }

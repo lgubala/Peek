@@ -5,7 +5,7 @@
     "Every drift bug Peek has had came from this list existing in three places:",
     "Firefox's manifest, Chrome's manifest, and Chrome's offscreen.html. A module",
     "added to one and forgotten in another fails only in the browser that missed",
-    "it, and only at runtime — 'P.policy.forHost is not a function' on every link.",
+    "it, and only at runtime \u2014 'P.policy.forHost is not a function' on every link.",
     "",
     "build.py generates all three from this file. Add a module here and it lands",
     "everywhere it belongs, or nowhere.",
@@ -14,7 +14,6 @@
     "Order matters: these are classic scripts sharing a Peek namespace, so a",
     "module must come after anything it reads at load time."
   ],
-
   "content": [
     "common/log.js",
     "config/rules.js",
@@ -35,7 +34,6 @@
     "content/hover.js",
     "content/index.js"
   ],
-
   "engine": [
     "common/log.js",
     "config/rules.js",
@@ -58,17 +56,19 @@
     "reader/index.js",
     "sites/index.js",
     "sites/github.js",
+    "background/inflight.js",
     "background/gate.js",
     "background/cache.js",
     "background/fetcher.js",
     "background/pipeline.js"
   ],
-
   "entry": {
     "firefox_background": "background/index.js",
     "chrome_offscreen": "offscreen/offscreen.js",
     "chrome_worker": "platform/service-worker.js"
   },
-
-  "popup": ["config/rules.js", "popup/popup.js"]
+  "popup": [
+    "config/rules.js",
+    "popup/popup.js"
+  ]
 }

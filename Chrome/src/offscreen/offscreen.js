@@ -12,8 +12,14 @@
   P.policy.load(chrome);
 
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-    if (!msg || msg.type !== "peek:offscreen:look") return false;
+    if (!msg) return false;
     if (sender && sender.id && sender.id !== chrome.runtime.id) return false;
+
+    if (msg.type === "peek:offscreen:cancel") {
+      P.pipeline.cancel(msg.id);
+      return false;
+    }
+    if (msg.type !== "peek:offscreen:look") return false;
 
     P.pipeline.look(msg.url, {
       images: !!msg.images
