@@ -332,6 +332,10 @@
     hideTimer = setTimeout(hide, P.config.GRACE_MS);
   }
 
+  /* Re-render in place, for when something the card shows has changed but the
+   * lookup has not. */
+  function redraw() { if (currentData) draw(); }
+
   function setPinned(on) {
     pinned = !!on;
     if (pinned) clearTimeout(hideTimer);
@@ -472,6 +476,13 @@
         if (!typing && currentData.lookable) { e.preventDefault(); lookup(); }
       }
 
+      /* Alt+Shift+K opens the panel from anywhere, since the toolbar button
+       * belongs to the popup. */
+      if (e.altKey && e.shiftKey && (e.key === "K" || e.key === "k")) {
+        e.preventDefault();
+        P.sidebar.toggle();
+      }
+
       if (e.altKey && e.shiftKey && (e.key === "P" || e.key === "p")) {
         P.settings.set("enabled", !P.settings.values.enabled);
         if (!P.settings.values.enabled) hide();
@@ -493,6 +504,11 @@
       if (insideCard(e)) return;
       clearTimeout(dwellTimer);
       if (!currentAnchor || card.style.display !== "block") return;
+
+      /* A pinned card has stopped being about the link. Following the anchor
+       * meant scrolling past it closed the one card the user explicitly asked
+       * to keep — so it stays where it is, and only Escape or Unpin closes it. */
+      if (pinned) return;
 
       if (scrollFrame) return;
       scrollFrame = requestAnimationFrame(() => {
@@ -527,7 +543,7 @@
   }
 
   P.hover = {
-    attach, show, hide, lookup, applyTheme, silencedHere, abandon, summoned, busy, setPinned,
+    attach, show, hide, lookup, applyTheme, silencedHere, abandon, summoned, busy, setPinned, redraw,
     get pinned() { return pinned; },
     get requestId() { return requestId; },
     get orphaned() { return orphaned; },

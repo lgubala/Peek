@@ -19,17 +19,73 @@
     PASSING_SPEED: 1100,
     GRACE_MS: 180,          // keep the card alive this long after leaving
     CARD_MAX_WIDTH: 420,    // px; the wide variant adds 40
+    /* Suffixes under which anyone may register, so the registrable domain is
+     * one label further left. Getting this wrong produces wrong *security*
+     * judgements: `ownedBy()`, the brand-mismatch check and the "leaves this
+     * site" chip all key off it.
+     *
+     * The full Public Suffix List is ~9,000 entries. Peek does not bundle it,
+     * because two thirds of it is ccTLD second levels that follow an obvious
+     * pattern — see SUFFIX_PATTERN below, which covers `com.ng`, `gov.br`,
+     * `ac.at` and several hundred more without a single entry.
+     *
+     * What must be explicit is everything irregular, and above all the
+     * free-hosting platforms. Those matter most: `evil.onrender.com` and
+     * `victim.onrender.com` are unrelated strangers, and treating them as the
+     * same registrable domain is exactly the false negative a phisher wants,
+     * since throwaway phishing lives on free subdomains. */
     MULTI_SUFFIX: new Set([
-      "co.uk", "org.uk", "ac.uk", "gov.uk", "me.uk", "net.uk", "sch.uk",
-      "co.jp", "ne.jp", "or.jp", "ac.jp", "go.jp",
-      "com.au", "net.au", "org.au", "edu.au", "gov.au",
-      "co.nz", "co.za", "co.in", "co.il", "co.kr", "co.th", "co.id",
-      "com.br", "com.mx", "com.ar", "com.cn", "com.tr", "com.sg", "com.hk",
-      "com.tw", "com.my", "com.ph", "com.vn", "com.pk", "com.ua", "com.pl",
-      "github.io", "gitlab.io", "pages.dev", "workers.dev", "vercel.app",
-      "netlify.app", "herokuapp.com", "blogspot.com", "wordpress.com",
-      "s3.amazonaws.com", "firebaseapp.com", "web.app", "glitch.me", "repl.co"
+      /* irregular ccTLD second levels the pattern below would miss */
+      "co.uk", "org.uk", "ac.uk", "gov.uk", "me.uk", "net.uk", "sch.uk", "nhs.uk",
+      "co.jp", "ne.jp", "or.jp", "ac.jp", "go.jp", "gr.jp", "lg.jp",
+      "co.nz", "net.nz", "org.nz", "govt.nz", "ac.nz", "geek.nz", "school.nz",
+      "co.za", "org.za", "web.za", "net.za", "gov.za", "ac.za",
+      "com.au", "net.au", "org.au", "edu.au", "gov.au", "asn.au", "id.au",
+      "co.il", "org.il", "ac.il", "gov.il", "net.il", "muni.il",
+      "co.kr", "or.kr", "ne.kr", "re.kr", "pe.kr", "go.kr", "mil.kr",
+      "com.hk", "org.hk", "edu.hk", "gov.hk", "idv.hk", "net.hk",
+      "co.at", "or.at", "ac.at", "gv.at", "priv.at",
+      "com.pl", "net.pl", "org.pl", "gov.pl", "edu.pl", "waw.pl", "gda.pl",
+      "com.ru", "net.ru", "org.ru", "pp.ru", "msk.ru", "spb.ru",
+      "com.de", "com.se", "com.es", "nom.es", "org.es", "gob.es", "edu.es",
+      "asso.fr", "nom.fr", "prd.fr", "tm.fr", "gouv.fr",
+      "co.com", "com.co", "eu.com", "us.com", "uk.com", "za.com", "br.com",
+      "cn.com", "de.com", "jpn.com", "ru.com", "sa.com", "se.com",
+      "in.net", "uk.net", "gb.net", "hu.net", "jp.net", "se.net",
+
+      /* free hosting, user content and tunnels — where throwaway phishing
+       * lives, and the reason this list exists at all */
+      "github.io", "githubusercontent.com", "gitlab.io", "codeberg.page",
+      "pages.dev", "workers.dev", "r2.dev", "trycloudflare.com",
+      "cfargotunnel.com", "cdn.cloudflare.net",
+      "vercel.app", "now.sh", "netlify.app", "netlify.com", "deno.dev",
+      "surge.sh", "onrender.com", "fly.dev", "railway.app", "koyeb.app",
+      "herokuapp.com", "herokudns.com", "appspot.com", "run.app",
+      "cloudfunctions.net", "web.app", "firebaseapp.com",
+      "azurewebsites.net", "azurestaticapps.net", "cloudapp.azure.com",
+      "amazonaws.com", "s3.amazonaws.com", "elasticbeanstalk.com",
+      "cloudfront.net", "awsapprunner.com",
+      "ngrok.io", "ngrok-free.app", "ngrok.app", "loca.lt", "localtunnel.me",
+      "glitch.me", "repl.co", "replit.dev", "replit.app", "stackblitz.io",
+      "codesandbox.io", "gitpod.io", "render.com",
+      "blogspot.com", "wordpress.com", "weebly.com", "wixsite.com",
+      "squarespace.com", "webflow.io", "tumblr.com", "medium.com",
+      "substack.com", "ghost.io", "neocities.org", "bitballoon.com",
+      "myshopify.com", "bigcartel.com", "storenvy.com",
+      "sharepoint.com", "notion.site", "framer.website", "carrd.co",
+      "typedream.app", "super.site", "bubbleapps.io", "softr.app",
+      "duckdns.org", "no-ip.org", "dynu.net", "hopto.org", "freeddns.org",
+      "000webhostapp.com", "altervista.org", "byethost.com", "infinityfree.net",
+      "firebaseio.com", "supabase.co", "pythonanywhere.com", "eu.org"
     ]),
+
+    /* Second-level ccTLD suffixes are overwhelmingly regular: a handful of
+     * function labels under a two-letter country code. This one pattern stands
+     * in for several hundred Public Suffix List entries — `com.ng`, `co.ke`,
+     * `gov.br`, `ac.at`, `edu.pe`, `net.cn` — and it fails safe: an unlisted
+     * suffix is treated as a suffix, so two unrelated sites under it are never
+     * mistaken for the same owner. */
+    SUFFIX_PATTERN: /^(com|co|net|org|edu|ac|gov|gob|govt|gouv|mil|int|nom|or|ne|ad|go|in|web|info|biz|name|pro|sch|res|firm|gen|ind|k12|lg|priv|assn|asso|store|tv)\.[a-z]{2}$/,
 
     /* --- link shapes --------------------------------------------------- */
 

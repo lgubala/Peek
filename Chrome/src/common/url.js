@@ -42,15 +42,29 @@
     try { return new URL(url).hostname.replace(/^www\./, ""); } catch (_) { return ""; }
   };
 
+  /* Is this a suffix anyone can register under, rather than a domain? */
+  function isPublicSuffix(candidate) {
+    if (P.config.MULTI_SUFFIX.has(candidate)) return true;
+    /* Regular ccTLD second levels: com.ng, co.ke, gov.br, ac.at. Standing in
+     * for several hundred Public Suffix List entries with one rule. */
+    return P.config.SUFFIX_PATTERN.test(candidate);
+  }
+
+  /* The domain someone actually registered — one label left of the public
+   * suffix. Everything that judges "is this the same site" keys off this, so
+   * being wrong here is being wrong about safety, not just about tidiness. */
   function registrable(host) {
     if (!host) return "";
-    const h = String(host).replace(/^www\./, "");
+    const h = String(host).replace(/^www\./, "").toLowerCase();
     const parts = h.split(".");
     if (parts.length <= 2) return h;
-    const two = parts.slice(-2).join(".");
+
     const three = parts.slice(-3).join(".");
-    if (P.config.MULTI_SUFFIX.has(three)) return parts.slice(-4).join(".");
-    if (P.config.MULTI_SUFFIX.has(two)) return parts.slice(-3).join(".");
+    if (isPublicSuffix(three)) return parts.slice(-4).join(".") || three;
+
+    const two = parts.slice(-2).join(".");
+    if (isPublicSuffix(two)) return parts.slice(-3).join(".");
+
     return two;
   }
 
@@ -108,6 +122,7 @@
   }
 
   P.url = {
+    isPublicSuffix,
     plusDecode, parseQuery, qget, tryDecode, hostOf, registrable, subdomain,
     isIpHost, extension, looksLikeUrl, base64Url, unwrap
   };

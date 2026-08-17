@@ -56,6 +56,14 @@ Toolbar button → **Read pages on hover** → off. Peek then makes no network
 requests at all and falls back to what it can read from the link itself. Press
 `L` to fetch a single page deliberately.
 
+## Kept pages
+
+Pages you press **Keep** on are stored in `storage.local` — the analysis and the
+content Peek had already fetched, so opening one later makes no new request.
+They stay on this machine, are never synced or transmitted, and are capped at 50
+pages and 2 MB with the oldest dropped first. The panel shows how many there
+are and can remove them individually or all at once.
+
 ## Images
 
 Three settings, in the popup:

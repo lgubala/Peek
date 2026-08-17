@@ -86,8 +86,26 @@
         return result;
       }
       if (ctype && ctype.indexOf("html") === -1 && ctype.indexOf("xml") === -1) {
-        result.summary = null;
-        result.flags = [{ tone: "warn", text: "Not a web page \u2014 served as " + result.contentType + "." }];
+        /* "Not a web page — served as application/pdf" told the user what the
+         * file extension already had. The useful questions are how big it is,
+         * whether it really is that type, and whether it is the document they
+         * were after. All three come from the headers and the first few KB. */
+        const declared = parseInt(res.headers.get("content-length") || "0", 10) || 0;
+        const head = await P.fetcher.readCapped(res, P.config.FILE_HEAD_BYTES);
+        const file = P.files.inspect(head.text, ctype, declared || head.bytes, result.finalUrl);
+
+        result.file = file;
+        result.summary = {
+          kind: file.kind || "File",
+          heading: file.title || "",
+          description: "",
+          metrics: file.metrics,
+          ingredients: null, steps: null, image: "", flags: [],
+          source: ["file headers"], lang: "", canonical: ""
+        };
+        result.flags = file.flags.concat(
+          file.kind ? [] : [{ tone: "warn", text: "Not a web page \u2014 served as " + result.contentType + "." }]);
+        result.article = { ok: false, reason: "" };
         P.cache.set(gate.url, opts, result);
         return result;
       }

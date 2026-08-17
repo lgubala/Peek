@@ -34,6 +34,11 @@
      * says "no article structure", which the user reads as "Peek does not work
      * on this site". This is memory in the background, not something anyone
      * waits on beyond the network time that was already spent. */
+    /* Enough of a document to find its metadata without downloading it. A
+     * PDF keeps /Info near the front; a .docx keeps docProps early in the ZIP
+     * directory. Anything that needs more than this, Peek does not read. */
+    FILE_HEAD_BYTES: 96 * 1024,
+
     BYTE_CAP: 2 * 1024 * 1024,      // text/html
     BYTE_CAP_OTHER: 640 * 1024,     // anything else: JSON APIs, feeds
 

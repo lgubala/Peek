@@ -72,7 +72,8 @@
       a.addEventListener("click", () => {
         state.userDisabled = state.userDisabled.filter((h) => h !== host);
         save({ userDisabled: state.userDisabled });
-        paintSite();
+        paintKept(stored && stored.kept);
+      paintSite();
       });
       box.appendChild(a);
     });
@@ -89,6 +90,21 @@
           "from ad networks and CDNs.",
     any: "Every image the page uses, including third-party ones."
   };
+
+  /* Nothing invisible: if pages are kept, the popup says how many and offers
+   * the way in. Hidden entirely when there are none, so it is not clutter. */
+  function paintKept(kept) {
+    const n = Array.isArray(kept) ? kept.length : 0;
+    if (!n) { $("keptSection").hidden = true; return; }
+    $("keptSection").hidden = false;
+    $("keptCount").textContent = n + (n === 1 ? " page kept" : " pages kept");
+    $("openPanel").onclick = () => {
+      api.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
+        if (tabs && tabs[0]) api.tabs.sendMessage(tabs[0].id, { type: "peek:panel" });
+        window.close();
+      }).catch(() => {});
+    };
+  }
 
   function paintImages() {
     for (const btn of $("images").querySelectorAll("button")) {
@@ -203,6 +219,7 @@
         save({ dwell: isFinite(v) ? Math.min(2000, Math.max(80, v)) : DEFAULTS.dwell });
       });
 
+      paintKept(stored && stored.kept);
       paintSite();
       paintImages();
       paintTrigger();

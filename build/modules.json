@@ -30,7 +30,9 @@
     "content/styles.js",
     "content/settings.js",
     "content/build.js",
+    "content/kept.js",
     "content/card.js",
+    "content/sidebar.js",
     "content/hover.js",
     "content/index.js"
   ],
@@ -54,6 +56,7 @@
     "reader/tidy.js",
     "reader/serialize.js",
     "reader/signals.js",
+    "reader/files.js",
     "reader/index.js",
     "sites/index.js",
     "sites/github.js",

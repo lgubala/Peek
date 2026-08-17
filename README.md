@@ -83,6 +83,43 @@ These are observations, never verdicts. *"This page calls itself PayPal and is
 served from paypal-secure.xyz"* is a fact you can check. Peek is not antivirus
 and does not pretend to be — your browser's Safe Browsing already does that job.
 
+## When Peek cannot read a page
+
+Reading an arbitrary page is a ladder of decreasing ambition: a handler that
+knows the site, a selector for its article, Readability's guess, then whatever
+the page states about itself. Every rung fails somewhere on the web, so Peek
+says which one answered and what is still on offer.
+
+It also distinguishes two things that used to look identical:
+
+- **A limitation** — the text is built by JavaScript, the page was too large,
+  the HTML broke. Said even when a summary is showing, because it explains why
+  the card is thinner than usual.
+- **Not an article** — a menu, a product page, a directory. There was nothing
+  to read, and the card is doing its job. Saying "no article structure" on a
+  product page is noise.
+
+Neither is a warning. A page Peek cannot parse is not a page that is out to get
+you, and using the same red flag for both is how real warnings stop being read.
+
+## Files
+
+A link ending in `.pdf` used to get "not a web page", which you already knew
+from the extension. Peek now reads the first 96 KB and reports what a file
+actually is before you download it:
+
+- **How big.** "3.0 MB" answers the question you were really asking.
+- **The document's own title and author**, from a PDF's `/Info` dictionary or a
+  `.docx`'s `docProps/core.xml` — often more accurate than the link text.
+- **How many pages**, when the PDF declares its page tree early enough.
+- **Whether it is password-protected**, before you download and discover it.
+- **Whether the extension is lying** — a link ending `.pdf` that the server
+  sends as `application/zip`.
+
+No PDF library, and no content: metadata only, from bytes that could not
+execute even if they wanted to. Anything Peek cannot read confidently, it says
+nothing about — a wrong title would be worse than none.
+
 ## Email addresses
 
 An address is a link too. Hovering a `mailto:` shows its domain and warns about

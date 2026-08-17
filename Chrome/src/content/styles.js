@@ -317,6 +317,16 @@ ol.steps li::marker { color: var(--ink-faint); font-size: 10px; }
   @keyframes breathe { 0%, 100% { opacity: .35; } 50% { opacity: .7; } }
 }
 
+/* Peek could not read the page. Informational, deliberately not the red or
+   amber of a security flag. */
+.unread {
+  display: block; padding: 8px 11px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 11.5px; line-height: 1.5; color: var(--ink-dim);
+}
+.unread-why { display: block; }
+.unread-got { display: block; margin-top: 2px; color: var(--ink-faint); }
+
 .note { padding: 9px 11px 0; font-size: 11.5px; color: var(--ink-dim); line-height: 1.45; }
 
 .flags { padding: 9px 11px 0; display: flex; flex-direction: column; gap: 5px; }
@@ -349,6 +359,64 @@ ol.steps li::marker { color: var(--ink-faint); font-size: 10px; }
 }
 .foot .safe { color: var(--accent); }
 .foot .sent { color: var(--warn); }
+/* ---------------------------------------------------------------------------
+   The kept-pages panel. Its own host, so the card can come and go underneath.
+   --------------------------------------------------------------------------- */
+.panel {
+  flex-direction: column;
+  box-shadow: -8px 0 28px rgba(0, 0, 0, .3);
+  transform: translateX(8px); opacity: 0;
+  transition: transform .12s ease-out, opacity .12s ease-out;
+}
+.panel.in { transform: none; opacity: 1; }
+
+.panel-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 14px; border-bottom: 1px solid var(--border); flex: none;
+}
+.panel-head h2 { margin: 0; font-size: 14px; color: var(--accent); letter-spacing: -.01em; }
+.panel-count { font-size: 11px; color: var(--ink-dim); }
+.panel-close {
+  margin-left: auto; font: inherit; font-size: 18px; line-height: 1;
+  background: none; border: none; color: var(--ink-faint); cursor: pointer; padding: 0 2px;
+}
+.panel-close:hover { color: var(--accent); }
+
+.panel-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.panel-empty { margin: 0; padding: 18px 14px; font-size: 12px; color: var(--ink-dim); line-height: 1.6; }
+
+.kept-item { padding: 11px 14px; border-bottom: 1px solid var(--border-soft); }
+.kept-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 3px; }
+.kept-domain { font-size: 11px; color: var(--accent); font-weight: 600; }
+.kept-kind {
+  font-size: 9px; text-transform: uppercase; letter-spacing: .07em; color: var(--ink-faint);
+}
+.kept-title {
+  display: block; color: var(--ink); font-size: 12.5px; line-height: 1.4;
+  text-decoration: none; margin-bottom: 4px;
+}
+.kept-title:hover { color: var(--accent); }
+.kept-desc { font-size: 11.5px; color: var(--ink-dim); line-height: 1.5; }
+.kept-metrics { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+.kept-metrics span {
+  font-size: 10px; padding: 1px 6px; border-radius: 999px;
+  background: var(--chip-bg); border: 1px solid var(--chip-br); color: var(--ink-dim);
+}
+.kept-flag {
+  font-size: 11px; line-height: 1.45; padding: 5px 7px; border-radius: 5px; margin: 4px 0;
+}
+.kept-flag.bad { background: var(--bad-bg); color: var(--bad); border: 1px solid var(--bad-br); }
+.kept-flag.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-br); }
+.kept-foot { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+.kept-when { font-size: 10px; color: var(--ink-faint); margin-right: auto; }
+
+.panel-foot {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  padding: 10px 14px; border-top: 1px solid var(--border);
+  font-size: 10.5px; color: var(--ink-faint);
+}
+.panel-foot span { flex: 1; line-height: 1.4; }
+
 .actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .act {
   font: inherit; font-size: 10.5px;

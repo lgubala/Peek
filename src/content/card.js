@@ -257,9 +257,28 @@
       card.appendChild(wrap);
     }
 
-    /* Only explain the missing article when there was nothing else to show. */
-    if (!wantsBody && article && !article.ok && article.reason) {
-      flagBlock(card, [{ tone: "warn", text: article.reason }]);
+    /* A page Peek could not read is not a page that is out to get you, and
+     * using the same red flag for both is how real warnings stop being read.
+     * So this is a neutral line, and it says what is still on offer rather
+     * than only what failed. */
+    /* A limitation is explained even when a summary is showing, because it
+     * says why the card is thinner than usual. "This is not an article" is
+     * only worth saying when there was nothing else to show. */
+    const explain = article && !article.ok && article.reason &&
+      (article.limitation || !wantsBody);
+    if (explain) {
+      const note = el("div", "unread");
+      note.appendChild(el("span", "unread-why", article.reason));
+
+      const got = [];
+      if (summary && summary.heading) got.push("its title");
+      if (summary && summary.description) got.push("its own description");
+      if (summary && summary.metrics && summary.metrics.length) got.push("the facts above");
+      if (got.length) {
+        note.appendChild(el("span", "unread-got",
+          "Showing " + got.join(" and ") + " instead."));
+      }
+      card.appendChild(note);
     }
     flagBlock(card, result.flags);
     flagBlock(card, summary && summary.flags);
@@ -407,8 +426,24 @@
     right.appendChild(actionButton(
       pinned ? "Unpin" : "Pin",
       pinned ? "Let the card close when you move away"
-             : "Keep the card open until you dismiss it",
+             : "Hold the card open while you read it",
       () => { P.hover.setPinned(!pinned); return null; }));
+
+    /* Pin holds the card open now; Keep puts it somewhere you can come back
+     * to. They were the same button, which is why nobody could tell what it
+     * did. */
+    if (result && result.ok) {
+      const already = P.kept.has(data.lookUrl);
+      right.appendChild(actionButton(
+        already ? "Kept \u2713" : "Keep",
+        already ? "Already in the panel \u2014 click to open it"
+                : "Save this to the panel, and come back to it later",
+        () => {
+          if (already) P.sidebar.show();
+          else { P.kept.add(data, result); P.hover.redraw(); }
+          return null;
+        }));
+    }
 
     if (result && result.ok) {
       /* When a redirect was unwrapped, Open goes to the destination rather

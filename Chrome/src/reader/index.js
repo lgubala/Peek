@@ -10,9 +10,58 @@
 (function (P) {
   "use strict";
 
+  /* The rungs Peek tries, in order, and what it says when it stops on one.
+   *
+   * Reading an arbitrary page is a ladder of decreasing ambition: a handler
+   * that knows the site, a selector for its article, Readability's guess, and
+   * finally the metadata the page states about itself. Every rung fails on
+   * some of the web, so the useful thing is not hiding that — it is saying
+   * which rung answered, and what is still available when none did.
+   *
+   * These read as observations, not apologies. "The text is built by
+   * JavaScript" tells the user something true about the page; "could not read
+   * this page" only tells them Peek failed. And none of them is a *warning* —
+   * a page Peek cannot parse is not a page that is out to get you, and using
+   * the same red flag for both is how real warnings stop being read. */
+  const OUTCOME = {
+    "js-shell": "The text is built by JavaScript, so the HTML Peek received holds none of it.",
+    "menu": "This is a menu or an index rather than something to read.",
+    "furniture": "Only page furniture here \u2014 headers, nav, no article.",
+    "too-large": "The page was too large to read in full, so its structure came out incomplete.",
+    "no-structure": "No article structure Peek could find.",
+    "thin": "Nothing readable in the HTML.",
+    "parse-failed": "Peek could not parse what the site sent.",
+    "no-readme": "No README in this repository."
+  };
+
+  /* Two different failures wearing the same coat.
+   *
+   *   LIMITATION  Peek could not read something that was there — the text is
+   *               behind JavaScript, the page was too big, the HTML broke.
+   *               Worth saying even when a summary is on offer, because it
+   *               explains why this card is thinner than usual.
+   *
+   *   NOT_AN_ARTICLE  There was no article to begin with: a menu, a product
+   *               page, a directory. Saying "no article structure" on a
+   *               product page is noise; the card is doing its job.
+   *
+   * Collapsing the two is why "works on 5 sites, fails on 50" feels arbitrary
+   * from the outside. */
+  const LIMITATION = new Set(["js-shell", "too-large", "parse-failed"]);
+
+  /* Whatever the reason, some of these leave the summary intact. */
+  const stop = (out, code, extra) => {
+    out.code = code;
+    out.reason = OUTCOME[code] || code;
+    /* Whether it is worth explaining alongside a summary. */
+    out.limitation = LIMITATION.has(code);
+    if (extra) Object.assign(out, extra);
+    return out;
+  };
+
   function blank() {
     return {
-      ok: false, title: "", byline: "", siteName: "", excerpt: "",
+      ok: false, code: "", title: "", byline: "", siteName: "", excerpt: "",
       nodes: [], textLength: 0, minutes: 0, images: 0, reason: "", via: ""
     };
   }
@@ -43,15 +92,12 @@
 
     const text = P.text.squash(frag.textContent);
     if (text.length < P.config.MIN_ARTICLE_CHARS) {
-      out.reason = "Only page furniture here \u2014 no real article text.";
-      return out;
+      return stop(out, "furniture");
     }
 
     const density = P.tidy.linkDensity(frag);
     if (density > P.config.MAX_LINK_DENSITY && text.length < 2500) {
-      out.reason = "Mostly links \u2014 this is a menu or an index, not an article.";
-      out.linkDensity = Math.round(density * 100) / 100;
-      return out;
+      return stop(out, "menu", { linkDensity: Math.round(density * 100) / 100 });
     }
 
     out.ok = true;
@@ -73,7 +119,7 @@
 
     let doc;
     try { doc = P.platform.parse(html); }
-    catch (_) { out.reason = "Could not parse the page."; return out; }
+    catch (_) { return stop(out, "parse-failed"); }
 
     /* Readability resolves relative links against the document base. */
     try {
@@ -86,7 +132,7 @@
     /* A page that builds itself in the browser has nothing to read on the wire. */
     const bodyText = P.text.squash(doc.body && doc.body.textContent);
     if (bodyText.length < 250 && doc.querySelectorAll("script").length > 3) {
-      out.reason = "This page builds itself with JavaScript \u2014 the HTML holds no article.";
+      stop(out, "js-shell");
       return out;
     }
 
@@ -106,24 +152,19 @@
       try {
         article = new Readability(doc, { charThreshold: 250, keepClasses: false }).parse();
       } catch (_) {
-        out.reason = "Could not find an article on this page.";
-        return out;
+        return stop(out, "parse-failed");
       }
       out.via = "readability";
 
       if (!article || !article.content) {
         /* Truncation is the likeliest cause of a broken tree on a big page,
          * and blaming the site for it is both wrong and unhelpful. */
-        out.reason = opts.truncated
-          ? "The page was too large to read in full, so its structure came out incomplete."
-          : bodyText.length < 400
-            ? "Nothing readable in the HTML."
-            : "No article structure \u2014 this looks like a listing or an app, not a page to read.";
-        return out;
+        return stop(out, opts.truncated ? "too-large"
+                       : bodyText.length < 400 ? "thin" : "no-structure");
       }
 
       try { frag = P.platform.parse(article.content).body; }
-      catch (_) { out.reason = "Could not process the article."; return out; }
+      catch (_) { return stop(out, "parse-failed"); }
 
       out.byline = P.text.squash(article.byline).slice(0, 120);
       out.siteName = P.text.squash(article.siteName).slice(0, 60);
@@ -142,10 +183,11 @@
     const out = blank();
     let frag;
     try { frag = P.platform.parse(html).body; }
-    catch (_) { out.reason = "Could not parse the content."; return out; }
+    catch (_) { return stop(out, "parse-failed"); }
     out.via = "handler";
     return finish(frag, out, opts);
   }
 
-  P.reader = { read, clean };
+  P.reader = {
+    OUTCOME, LIMITATION, read, clean };
 })(self.Peek = self.Peek || {});

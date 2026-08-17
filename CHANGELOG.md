@@ -1,5 +1,64 @@
 # Changelog
 
+## 1.23.0
+
+- **Fixed a false negative that mattered.** The registrable-domain list had 52
+  entries, and everything judging "is this the same site" keys off it —
+  `ownedBy()`, the brand-mismatch check, the leaves-this-site chip. So
+  `evil.pages.dev` and `victim.pages.dev` came out as the same owner, which is
+  exactly what a phisher wants, since throwaway phishing lives on free
+  subdomains. Free hosting, tunnels and user-content platforms are now listed
+  properly: Cloudflare Pages and Workers, Vercel, Netlify, Render, Fly,
+  Railway, Heroku, App Engine, Azure, S3, CloudFront, ngrok, Replit, Glitch,
+  Shopify, Substack, Notion, dynamic-DNS providers and more
+- **Several hundred ccTLD second levels now work without listing them.**
+  `com.ng`, `gov.br`, `co.ke`, `ac.at`, `net.cn`, `com.pe` were all wrong.
+  Rather than bundle the ~9,000-entry Public Suffix List, one pattern covers the
+  regular shape — a function label under a two-letter country code — and it
+  fails safe: an unrecognised suffix is treated as a suffix, so two sites under
+  it stay distinct. Merging strangers is the dangerous mistake; splitting a site
+  is the harmless one
+
+## 1.22.0
+
+- **A page Peek cannot read is no longer dressed as a page that is dangerous.**
+  Read failures rendered as amber flags — the same visual language as "this
+  page asks for a password but is not the site it claims". They are now a
+  neutral line that also says what is on offer instead. Same lesson as the
+  apple-pie false positive: every non-warning shown as a warning makes the real
+  ones easier to ignore
+- **Limitations are separated from "there was nothing to read."** "The text is
+  built by JavaScript" is worth saying even when a summary is showing, because
+  it explains why the card is thinner than usual. "No article structure" on a
+  product page is noise. Collapsing the two is what makes "works on 5 sites,
+  fails on 50" feel arbitrary from the outside
+- Every read outcome has a stable code and a sentence that describes the
+  **page** rather than Peek's disappointment — "The text is built by
+  JavaScript, so the HTML Peek received holds none of it", not "could not read
+  this page"
+
+## 1.21.0 — keeping things
+
+- **Fixed: a pinned card closed when you scrolled past its link.** 1.16 made
+  page scrolls reposition the card and hide it once the anchor left the
+  viewport, and never exempted pinned cards — so scrolling away destroyed the
+  one card you had explicitly asked to keep. A pinned card has stopped being
+  about the link, so it now stays where it is until Escape or Unpin
+- **Pin and Keep are two different things now**, which is why neither was
+  understandable as one button. **Pin** holds the card open while you read.
+  **Keep** saves it to a panel and comes back to it later
+- **A kept-pages panel** (`Alt`+`Shift`+`K`, or the toolbar popup). Kept pages
+  survive closing the tab and restarting the browser, and store the content
+  Peek already fetched — so opening one later does not quietly tell that site
+  you came back. Capped at 50 pages and 2 MB, oldest dropped first, with the
+  count and a Remove all in the panel: accumulated state you cannot see is how
+  an extension earns "it slowed my browser down"
+- **Files say what they are.** A `.pdf` link reported only "not a web page",
+  which the extension had already told you. Peek now reads the first 96 KB and
+  reports size, the document's own title and author, page count, whether it is
+  password-protected, and whether the extension disagrees with what the server
+  sends. Metadata only, no PDF library, and nothing that could execute
+
 ## 1.20.0
 
 Two reported bugs, and the performance work.

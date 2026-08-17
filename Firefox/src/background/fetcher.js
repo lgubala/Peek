@@ -45,6 +45,13 @@
   }
 
   function decode(bytes, headerValue) {
+    /* Binary formats are scanned for ASCII markers, so every byte has to map
+     * to a character. UTF-8 decoding would replace anything invalid and take
+     * the markers with it. */
+    const type = String(headerValue || "").toLowerCase();
+    if (type && !/text|html|xml|json|javascript/.test(type)) {
+      return new TextDecoder("latin1", { fatal: false }).decode(bytes);
+    }
     const label = charsetFrom(headerValue, bytes);
     try {
       return new TextDecoder(label, { fatal: false }).decode(bytes);

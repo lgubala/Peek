@@ -8,16 +8,26 @@
   const api = (typeof browser !== "undefined" && browser.storage) ? browser
             : (typeof chrome !== "undefined" && chrome.storage) ? chrome : null;
 
-  Promise.all([P.settings.load(), P.policy.load(api)]).then(() => {
+  Promise.all([P.settings.load(), P.policy.load(api), P.kept.load()]).then(() => {
     /* Peek does nothing at all on hosts the config or the user switched off. */
     if (P.policy.forHost(P.url.hostOf(location.href)) === "disabled") {
       P.log.info("switched off on", location.hostname);
       return;
     }
     P.hover.attach();
+    P.sidebar.attach();
+
+    /* The toolbar popup cannot reach into the page, so it asks. */
+    if (api && api.runtime && api.runtime.onMessage) {
+      api.runtime.onMessage.addListener((msg) => {
+        if (msg && msg.type === "peek:panel") { P.sidebar.toggle(); return false; }
+        return false;
+      });
+    }
     P.settings.watch((v) => {
       if (!v.enabled) P.hover.hide();
       P.hover.applyTheme();
+      P.sidebar.applyTheme();
     });
     P.log.info("loaded on", location.hostname, "\u00b7 hover a link \u00b7 __peek.settings");
   });
@@ -27,6 +37,8 @@
     self.__peek = {
       get settings() { return Object.assign({}, P.settings.values); },
       set: (k, v) => P.settings.set(k, v),
+      kept: () => P.kept.all,
+      panel: () => P.sidebar.toggle(),
       /* What does Peek make of this URL's query? __peek.trackers(url) */
       trackers(url) {
         try {
